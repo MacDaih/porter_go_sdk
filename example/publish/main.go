@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	sdk "github.com/macdaih/porter-go-sdk"
+	sdk "github.com/macdaih/porter_go_sdk"
 )
 
 type weatherData struct {
