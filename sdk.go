@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net"
-	//"time"
+	"time"
 )
 
 type credential struct {
@@ -88,7 +88,7 @@ func NewClient(
 	return &pc
 }
 
-func (pc *PorterClient) Connect(ctx context.Context) error {
+func (pc *PorterClient) connect(ctx context.Context) error {
 
 	msg, err := buildConnect(
 		pc.clientID,
@@ -127,31 +127,13 @@ func (pc *PorterClient) Connect(ctx context.Context) error {
 	if res != 0x20 {
 		return fmt.Errorf("failed connack response : received %s", parseCode(res))
 	}
-	// keep alive
-	// context done instead of channel
-	// AKA receiver func
-	//go func() {
-	//	ping := []byte{0xC0, 0}
-	//	for {
-	//		select {
-	//		case <-ctx.Done():
-	//			if _, err := pc.conn.Write(
-	//				[]byte{0xE0, 0x01, 0x00},
-	//			); err != nil {
-	//				panic(err)
-	//			}
-	//			return
-	//		case <-time.After(time.Duration(pc.keepAlive) * time.Second):
-	//			// send ping
-	//			if _, err := pc.conn.Write(ping); err != nil {
-	//				panic(err)
-	//			}
-	//		}
-	//	}
-	//}()
+
+	ka := time.Duration(pc.keepAlive) * time.Second
 
 	go func() {
+		tmark := time.Now().Add(ka)
 		for {
+
 			buff := make([]byte, 1024)
 			if _, err := pc.conn.Read(buff); err != nil {
 				if errors.Is(err, io.EOF) {
@@ -171,9 +153,50 @@ func (pc *PorterClient) Connect(ctx context.Context) error {
 				pc.endState <- struct{}{}
 				return
 			default:
+				if n := time.Now(); n.After(tmark) {
+					tmark = n.Add(ka)
+
+					ping := []byte{0xC0, 0}
+					if _, err := pc.conn.Write(ping); err != nil {
+						pc.endState <- struct{}{}
+						return
+					}
+				}
 			}
 		}
 	}()
+
+	return nil
+}
+
+func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
+	if err := pc.connect(ctx); err != nil {
+		return err
+	}
+
+	msg, err := buildSubscribe(topics, 1)
+	if err != nil {
+		return err
+	}
+	//
+
+	if pc.conn == nil {
+		return fmt.Errorf("failed to perform subscription : client disconnected")
+	}
+
+	if _, err := pc.conn.Write(msg); err != nil {
+		return err
+	}
+
+	select {
+	case <-ctx.Done():
+		fmt.Println("ctx done")
+	case <-pc.endState:
+	}
+
+	fmt.Println("client flow done")
+	pc.conn.Close()
+
 	return nil
 }
 
@@ -199,34 +222,4 @@ func (pc *PorterClient) readMessage(pkt []byte) error {
 func (pc *PorterClient) Publish(topic string, message any) error {
 	// TODO implement
 	return nil
-}
-
-func (pc *PorterClient) Subscribe(topics []string) error {
-	// Subscribe packet
-	msg, err := buildSubscribe(topics, 1)
-	if err != nil {
-		return err
-	}
-	//
-
-	if pc.conn == nil {
-		return fmt.Errorf("failed to perform subscription : client disconnected")
-	}
-
-	if _, err := pc.conn.Write(msg); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (pc *PorterClient) Await(ctx context.Context) {
-	select {
-	case <-ctx.Done():
-		fmt.Println("ctx done")
-	case <-pc.endState:
-	}
-
-	fmt.Println("client flow done")
-	pc.conn.Close()
 }

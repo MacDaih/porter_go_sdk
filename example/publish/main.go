@@ -38,13 +38,9 @@ func main() {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(30)*time.Second)
 	defer cancel()
-	if err := client.Connect(ctx); err != nil {
+
+	if err := client.Subscribe(ctx, []string{"outside/weather"}); err != nil {
 		panic(err)
 	}
 
-	if err := client.Subscribe([]string{"outside/weather"}); err != nil {
-		panic(err)
-	}
-
-	client.Await(ctx)
 }
