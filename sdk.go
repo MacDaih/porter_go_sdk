@@ -139,7 +139,9 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 				if errors.Is(err, io.EOF) {
 					return
 				}
-				panic(err)
+				// TODO use err in struct end state
+				fmt.Println(err)
+				return
 			}
 
 			if err := pc.readMessage(buff); err != nil {
