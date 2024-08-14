@@ -2,9 +2,7 @@ package portergosdk
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"io"
 	"net"
 	"time"
 )
