@@ -136,11 +136,9 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 
 			buff := make([]byte, 1024)
 			if _, err := pc.conn.Read(buff); err != nil {
-				if errors.Is(err, io.EOF) {
-					return
-				}
 				// TODO use err in struct end state
 				fmt.Println(err)
+				pc.endState <- struct{}{}
 				return
 			}
 
