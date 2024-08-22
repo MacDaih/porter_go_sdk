@@ -2,7 +2,9 @@ package portergosdk
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	//"io"
 	"net"
 	"time"
 )
@@ -15,6 +17,10 @@ type credential struct {
 
 type SubscribeCallback func() error
 
+type endState struct {
+	err error
+}
+
 type PorterClient struct {
 	serverHost string
 
@@ -25,10 +31,7 @@ type PorterClient struct {
 	willFlag uint8
 
 	cleanStart bool
-	//will       bool
-	//retain     bool
-	//pwdFlag bool
-	//usrFlag bool
+
 	qos uint8
 
 	nextPacketID uint16
@@ -36,9 +39,10 @@ type PorterClient struct {
 	creds *credential
 	conn  *net.TCPConn
 
+	receivedMax    int
 	messageHandler func([]byte) error
 
-	endState chan struct{}
+	endState chan endState
 }
 
 type Option func(c *PorterClient)
@@ -59,6 +63,12 @@ func WithBasicCredentials(user string, pwd string) Option {
 	}
 }
 
+func WithMaxMessage(max int) Option {
+	return func(c *PorterClient) {
+		c.receivedMax = max
+	}
+}
+
 func WithCallBack(fn func(b []byte) error) Option {
 	return func(c *PorterClient) {
 		c.messageHandler = fn
@@ -70,12 +80,13 @@ func NewClient(
 	keepAlive uint16,
 	options ...Option,
 ) *PorterClient {
-	es := make(chan struct{}, 1)
+	es := make(chan endState, 1)
 
 	pc := PorterClient{
 		serverHost:     serverHost,
 		keepAlive:      keepAlive,
 		endState:       es,
+		receivedMax:    1,
 		messageHandler: func(_ []byte) error { return nil },
 	}
 
@@ -115,50 +126,42 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 		return err
 	}
 
-	received := make([]byte, 1024)
-	if _, err = pc.conn.Read(received); err != nil {
+	// read connack
+	connbuff := make([]byte, 1024)
+	if _, err := pc.conn.Read(connbuff); err != nil {
 		return err
 	}
 
-	// handle connack
-	res := received[0]
-	if res != 0x20 {
-		return fmt.Errorf("failed connack response : received %s", parseCode(res))
+	if connbuff[0] != 0x20 {
+		return fmt.Errorf("unexpected packet response code")
 	}
 
 	ka := time.Duration(pc.keepAlive) * time.Second
 
 	go func() {
 		tmark := time.Now().Add(ka)
+		received := 0
 		for {
-
 			buff := make([]byte, 1024)
 			if _, err := pc.conn.Read(buff); err != nil {
-				// TODO use err in struct end state
-				fmt.Println(err)
-				pc.endState <- struct{}{}
+				//	if !errors.Is(err, io.EOF) {
+				pc.endState <- endState{err: err}
+				return
+				//	}
+
+			}
+
+			if err := pc.readMessage(buff, &received); err != nil {
+				pc.endState <- endState{err: err}
 				return
 			}
 
-			if err := pc.readMessage(buff); err != nil {
-				fmt.Println(err)
-				pc.endState <- struct{}{}
-				return
-			}
-
-			select {
-			case <-ctx.Done():
-				pc.endState <- struct{}{}
-				return
-			default:
-				if n := time.Now(); n.After(tmark) {
-					tmark = n.Add(ka)
-
-					ping := []byte{0xC0, 0}
-					if _, err := pc.conn.Write(ping); err != nil {
-						pc.endState <- struct{}{}
-						return
-					}
+			if n := time.Now(); n.After(tmark) {
+				tmark = n.Add(ka)
+				ping := []byte{0xC0, 0}
+				if _, err := pc.conn.Write(ping); err != nil {
+					pc.endState <- endState{err: err}
+					return
 				}
 			}
 		}
@@ -172,11 +175,12 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 		return err
 	}
 
+	defer pc.conn.Close()
+
 	msg, err := buildSubscribe(topics, 1)
 	if err != nil {
 		return err
 	}
-	//
 
 	if pc.conn == nil {
 		return fmt.Errorf("failed to perform subscription : client disconnected")
@@ -188,31 +192,37 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 
 	select {
 	case <-ctx.Done():
-		fmt.Println("ctx done")
-	case <-pc.endState:
+		pc.endState <- endState{}
+	case es := <-pc.endState:
+		return es.err
 	}
-
-	fmt.Println("client flow done")
-	pc.conn.Close()
 
 	return nil
 }
 
-func (pc *PorterClient) readMessage(pkt []byte) error {
-
+func (pc *PorterClient) readMessage(pkt []byte, received *int) error {
 	switch pkt[0] {
 	case 0xe0:
-		pc.endState <- struct{}{}
+		pc.endState <- endState{err: errors.New("client disconnected")}
 		return nil
 	case 0x30:
-		fmt.Println("received publish")
 		msg, err := readPublish(pkt)
 		if err != nil {
 			fmt.Println(err)
 			return err
 		}
 
-		return pc.messageHandler(msg.Payload)
+		if err := pc.messageHandler(msg.Payload); err != nil {
+			return err
+		}
+
+		*received++
+		if *received >= pc.receivedMax {
+			pc.endState <- endState{}
+			return nil
+		}
+	default:
+		fmt.Printf("received code %x\n", pkt[0])
 	}
 	return nil
 }

@@ -20,9 +20,9 @@ type weatherData struct {
 func main() {
 
 	client := sdk.NewClient(
-		"0.0.0.0:8080",
-		15,
-		sdk.WithID("test"),
+		"192.168.1.185:8080",
+		10,
+		sdk.WithID("bb476565-c9c3-4f17-bb04-686d57bf1859"),
 		sdk.WithBasicCredentials("test", "test"),
 		sdk.WithCallBack(
 			func(payload []byte) error {
@@ -36,7 +36,7 @@ func main() {
 		),
 	)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(30)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(20)*time.Second)
 	defer cancel()
 
 	if err := client.Subscribe(ctx, []string{"outside/weather"}); err != nil {
