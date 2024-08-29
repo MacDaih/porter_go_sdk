@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	sdk "github.com/macdaih/porter_go_sdk"
@@ -20,8 +21,8 @@ type weatherData struct {
 func main() {
 
 	client := sdk.NewClient(
-		"192.168.1.185:8080",
-		10,
+		os.Getenv("SERVER_ADDR"),
+		5,
 		sdk.WithID("bb476565-c9c3-4f17-bb04-686d57bf1859"),
 		sdk.WithBasicCredentials("test", "test"),
 		sdk.WithCallBack(
