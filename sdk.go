@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	//"io"
 	"net"
 	"time"
 )
@@ -87,7 +86,7 @@ func NewClient(
 		keepAlive:      keepAlive,
 		endState:       es,
 		receivedMax:    1,
-		messageHandler: func(_ []byte) error { return nil },
+		messageHandler: func(_ context.Context, _ []byte) error { return nil },
 	}
 
 	for _, fn := range options {
@@ -151,7 +150,7 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 
 			}
 
-			if err := pc.readMessage(buff, &received); err != nil {
+			if err := pc.readMessage(ctx, buff, &received); err != nil {
 				pc.endState <- endState{err: err}
 				return
 			}
@@ -200,7 +199,7 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 	return nil
 }
 
-func (pc *PorterClient) readMessage(pkt []byte, received *int) error {
+func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, received *int) error {
 	switch pkt[0] {
 	case 0xe0:
 		pc.endState <- endState{err: errors.New("client disconnected")}
@@ -212,7 +211,7 @@ func (pc *PorterClient) readMessage(pkt []byte, received *int) error {
 			return err
 		}
 
-		if err := pc.messageHandler(msg.Payload); err != nil {
+		if err := pc.messageHandler(ctx, msg.Payload); err != nil {
 			return err
 		}
 
