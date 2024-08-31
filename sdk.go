@@ -40,7 +40,7 @@ type PorterClient struct {
 	conn  *net.TCPConn
 
 	receivedMax    int
-	messageHandler func([]byte) error
+	messageHandler func(context.Context, []byte) error
 
 	endState chan endState
 }
@@ -69,7 +69,7 @@ func WithMaxMessage(max int) Option {
 	}
 }
 
-func WithCallBack(fn func(b []byte) error) Option {
+func WithCallBack(fn func(ctx context.Context, b []byte) error) Option {
 	return func(c *PorterClient) {
 		c.messageHandler = fn
 	}
