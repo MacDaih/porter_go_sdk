@@ -175,10 +175,6 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 		return err
 	}
 
-	if pc.conn == nil {
-		return fmt.Errorf("failed to perform subscription : client disconnected")
-	}
-
 	if _, err := conn.Write(msg); err != nil {
 		return err
 	}
