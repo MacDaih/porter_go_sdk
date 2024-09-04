@@ -114,7 +114,7 @@ func (pc *PorterClient) connect(ctx context.Context, conn *net.TCPConn) error {
 
 	// read connack
 	connbuff := make([]byte, 1024)
-	if _, err := pc.conn.Read(connbuff); err != nil {
+	if _, err := conn.Read(connbuff); err != nil {
 		return err
 	}
 
@@ -129,7 +129,7 @@ func (pc *PorterClient) connect(ctx context.Context, conn *net.TCPConn) error {
 		received := 0
 		for {
 			buff := make([]byte, 1024)
-			if _, err := pc.conn.Read(buff); err != nil {
+			if _, err := conn.Read(buff); err != nil {
 				pc.endState <- endState{err: err}
 				return
 			}
@@ -142,7 +142,7 @@ func (pc *PorterClient) connect(ctx context.Context, conn *net.TCPConn) error {
 			if n := time.Now(); n.After(tmark) {
 				tmark = n.Add(ka)
 				ping := []byte{0xC0, 0}
-				if _, err := pc.conn.Write(ping); err != nil {
+				if _, err := conn.Write(ping); err != nil {
 					pc.endState <- endState{err: err}
 					return
 				}
@@ -179,7 +179,7 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 		return fmt.Errorf("failed to perform subscription : client disconnected")
 	}
 
-	if _, err := pc.conn.Write(msg); err != nil {
+	if _, err := conn.Write(msg); err != nil {
 		return err
 	}
 
