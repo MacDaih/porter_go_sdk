@@ -36,7 +36,6 @@ type PorterClient struct {
 	nextPacketID uint16
 
 	creds *credential
-	conn  *net.TCPConn
 
 	receivedMax    int
 	messageHandler func(context.Context, []byte) error
@@ -96,7 +95,7 @@ func NewClient(
 	return &pc
 }
 
-func (pc *PorterClient) connect(ctx context.Context) error {
+func (pc *PorterClient) connect(ctx context.Context, conn *net.TCPConn) error {
 
 	msg, err := buildConnect(
 		pc.clientID,
@@ -107,18 +106,6 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-
-	addr, err := net.ResolveTCPAddr("tcp4", pc.serverHost)
-	if err != nil {
-		return err
-	}
-
-	conn, err := net.DialTCP("tcp", nil, addr)
-	if err != nil {
-		return err
-	}
-
-	pc.conn = conn
 
 	// no closed conn
 	if _, err := pc.conn.Write(msg); err != nil {
@@ -143,11 +130,8 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 		for {
 			buff := make([]byte, 1024)
 			if _, err := pc.conn.Read(buff); err != nil {
-				//	if !errors.Is(err, io.EOF) {
 				pc.endState <- endState{err: err}
 				return
-				//	}
-
 			}
 
 			if err := pc.readMessage(ctx, buff, &received); err != nil {
@@ -170,11 +154,21 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 }
 
 func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
-	if err := pc.connect(ctx); err != nil {
+	addr, err := net.ResolveTCPAddr("tcp4", pc.serverHost)
+	if err != nil {
 		return err
 	}
 
-	defer pc.conn.Close()
+	conn, err := net.DialTCP("tcp", nil, addr)
+	if err != nil {
+		return err
+	}
+
+	defer conn.Close()
+
+	if err := pc.connect(ctx, conn); err != nil {
+		return err
+	}
 
 	msg, err := buildSubscribe(topics, 1)
 	if err != nil {
