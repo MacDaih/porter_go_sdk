@@ -108,7 +108,7 @@ func (pc *PorterClient) connect(ctx context.Context, conn *net.TCPConn) error {
 	}
 
 	// no closed conn
-	if _, err := pc.conn.Write(msg); err != nil {
+	if _, err := conn.Write(msg); err != nil {
 		return err
 	}
 
