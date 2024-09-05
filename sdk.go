@@ -130,6 +130,9 @@ func (pc *PorterClient) connect(ctx context.Context, conn *net.TCPConn) error {
 		for {
 			buff := make([]byte, 1024)
 			if _, err := conn.Read(buff); err != nil {
+				if errors.Is(err, io.EOF) {
+					err = nil
+				}
 				pc.endState <- endState{err: err}
 				return
 			}
@@ -183,13 +186,10 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 	case <-ctx.Done():
 		pc.endState <- endState{}
 		fmt.Println("ctx done")
+		return pc.endState.err
 	case es := <-pc.endState:
 		return es.err
 	}
-
-	fmt.Println("returning subscribe")
-
-	return nil
 }
 
 func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, received *int) error {
