@@ -182,9 +182,12 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 	select {
 	case <-ctx.Done():
 		pc.endState <- endState{}
+		fmt.Println("ctx done")
 	case es := <-pc.endState:
 		return es.err
 	}
+
+	fmt.Println("returning subscribe")
 
 	return nil
 }
