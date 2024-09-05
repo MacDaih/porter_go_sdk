@@ -23,6 +23,8 @@ type endState struct {
 
 type PorterClient struct {
 	serverHost string
+	conn       *net.TCPConn
+	connOpen   bool
 
 	clientID string
 
@@ -96,7 +98,7 @@ func NewClient(
 	return &pc
 }
 
-func (pc *PorterClient) connect(ctx context.Context, conn *net.TCPConn) error {
+func (pc *PorterClient) connect(ctx context.Context) error {
 
 	msg, err := buildConnect(
 		pc.clientID,
@@ -109,13 +111,13 @@ func (pc *PorterClient) connect(ctx context.Context, conn *net.TCPConn) error {
 	}
 
 	// no closed conn
-	if _, err := conn.Write(msg); err != nil {
+	if _, err := pc.conn.Write(msg); err != nil {
 		return err
 	}
 
 	// read connack
 	connbuff := make([]byte, 1024)
-	if _, err := conn.Read(connbuff); err != nil {
+	if _, err := pc.conn.Read(connbuff); err != nil {
 		return err
 	}
 
@@ -129,10 +131,15 @@ func (pc *PorterClient) connect(ctx context.Context, conn *net.TCPConn) error {
 		tmark := time.Now().Add(ka)
 		received := 0
 		for {
+			if !pc.connOpen {
+				return
+			}
+
 			buff := make([]byte, 1024)
-			if _, err := conn.Read(buff); err != nil {
+			if _, err := pc.conn.Read(buff); err != nil {
 				if errors.Is(err, io.EOF) {
-					err = nil
+					pc.endState <- endState{}
+					return
 				}
 				pc.endState <- endState{err: err}
 				return
@@ -146,7 +153,7 @@ func (pc *PorterClient) connect(ctx context.Context, conn *net.TCPConn) error {
 			if n := time.Now(); n.After(tmark) {
 				tmark = n.Add(ka)
 				ping := []byte{0xC0, 0}
-				if _, err := conn.Write(ping); err != nil {
+				if _, err := pc.conn.Write(ping); err != nil {
 					pc.endState <- endState{err: err}
 					return
 				}
@@ -168,9 +175,15 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 		return err
 	}
 
-	defer conn.Close()
+	pc.conn = conn
+	pc.connOpen = true
 
-	if err := pc.connect(ctx, conn); err != nil {
+	defer func() {
+		pc.conn.Close()
+		pc.connOpen = false
+	}()
+
+	if err := pc.connect(ctx); err != nil {
 		return err
 	}
 
@@ -179,14 +192,13 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 		return err
 	}
 
-	if _, err := conn.Write(msg); err != nil {
+	if _, err := pc.conn.Write(msg); err != nil {
 		return err
 	}
 
 	select {
 	case <-ctx.Done():
 		pc.endState <- endState{}
-		fmt.Println("ctx done")
 		return nil
 	case es := <-pc.endState:
 		return es.err
@@ -196,12 +208,11 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, received *int) error {
 	switch pkt[0] {
 	case 0xe0:
-		pc.endState <- endState{err: errors.New("client disconnected")}
+		pc.endState <- endState{}
 		return nil
 	case 0x30:
 		msg, err := readPublish(pkt)
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
 
@@ -215,7 +226,6 @@ func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, received *i
 			return nil
 		}
 	default:
-		fmt.Printf("received code %x\n", pkt[0])
 	}
 	return nil
 }

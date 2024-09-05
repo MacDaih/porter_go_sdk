@@ -26,7 +26,7 @@ func main() {
 		sdk.WithID("bb476565-c9c3-4f17-bb04-686d57bf1859"),
 		sdk.WithBasicCredentials("test", "test"),
 		sdk.WithCallBack(
-			func(payload []byte) error {
+			func(_ context.Context, payload []byte) error {
 				var wd weatherData
 				if err := json.Unmarshal(payload, &wd); err != nil {
 					return err
