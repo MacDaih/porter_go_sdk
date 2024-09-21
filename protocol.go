@@ -41,3 +41,8 @@ func parseCode(in byte) CodeString {
 		return CodeUnknown
 	}
 }
+
+// Flag byte
+const (
+    QoSFlag = 0x18
+)

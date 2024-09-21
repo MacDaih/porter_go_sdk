@@ -17,6 +17,7 @@ func buildConnect(
 	cid string,
 	keepAlive uint16,
 	creds *credential,
+	qos int,
 ) ([]byte, error) {
 	// make connect packet
 	var (
@@ -42,6 +43,10 @@ func buildConnect(
 	props := make([]Prop, 0, 7)
 
 	var flag uint8 = 0
+
+	if qos > 0 {
+		flag ^= uint8(qos & QoSFlag)
+	}
 
 	if creds != nil {
 		authProp, err := NewProperty(

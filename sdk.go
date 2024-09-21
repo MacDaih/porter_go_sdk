@@ -112,6 +112,7 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 		pc.clientID,
 		pc.keepAlive,
 		pc.creds,
+		pc.qos,
 	)
 
 	if err != nil {
