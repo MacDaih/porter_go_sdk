@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+const (
+	QoSZero = iota
+	QoSOne
+	QoSTwo
+)
+
 type credential struct {
 	authMethod string
 	usr        *string
@@ -34,7 +40,7 @@ type PorterClient struct {
 
 	cleanStart bool
 
-	qos uint8
+	qos int
 
 	nextPacketID uint16
 
@@ -79,6 +85,7 @@ func WithCallBack(fn func(ctx context.Context, b []byte) error) Option {
 func NewClient(
 	serverHost string,
 	keepAlive uint16,
+	qos int,
 	options ...Option,
 ) *PorterClient {
 	es := make(chan endState, 1)
@@ -88,6 +95,7 @@ func NewClient(
 		keepAlive:      keepAlive,
 		endState:       es,
 		receivedMax:    1,
+		qos:            qos,
 		messageHandler: func(_ context.Context, _ []byte) error { return nil },
 	}
 
