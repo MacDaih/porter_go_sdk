@@ -13,7 +13,7 @@ func main() {
 
 	client := sdk.NewClient(
 		os.Getenv("SERVER_ADDR"),
-		5,
+		10,
 		sdk.QoSOne,
 		sdk.WithID("bb476565-c9c3-4f17-bb04-686d57bf1859"),
 		sdk.WithBasicCredentials("test", "test"),
@@ -25,10 +25,10 @@ func main() {
 		),
 	)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(20)*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(120)*time.Second)
 	defer cancel()
 
-	if err := client.Subscribe(ctx, []string{"outside/weather"}); err != nil {
+	if err := client.Subscribe(ctx, []string{"/app_telemetry/"}); err != nil {
 		panic(err)
 	}
 

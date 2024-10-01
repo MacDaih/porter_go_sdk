@@ -94,7 +94,7 @@ func NewClient(
 		serverHost:     serverHost,
 		keepAlive:      keepAlive,
 		endState:       es,
-		receivedMax:    1,
+		receivedMax:    10,
 		qos:            qos,
 		messageHandler: func(_ context.Context, _ []byte) error { return nil },
 	}
@@ -107,6 +107,11 @@ func NewClient(
 }
 
 func (pc *PorterClient) connect(ctx context.Context) error {
+	if err := pc.conn.SetReadDeadline(
+		time.Now().Add(time.Duration(pc.keepAlive) * time.Second),
+	); err != nil {
+		return err
+	}
 
 	msg, err := buildConnect(
 		pc.clientID,
@@ -134,10 +139,7 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 		return fmt.Errorf("unexpected packet response code")
 	}
 
-	ka := time.Duration(pc.keepAlive) * time.Second
-
 	go func() {
-		tmark := time.Now().Add(ka)
 		received := 0
 		for {
 			if !pc.connOpen {
@@ -146,10 +148,29 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 
 			buff := make([]byte, 1024)
 			if _, err := pc.conn.Read(buff); err != nil {
+				e := err.(net.Error)
+				if e.Timeout() {
+					ping := []byte{0xC0, 0}
+					if _, err := pc.conn.Write(ping); err != nil {
+						pc.endState <- endState{err: err}
+						return
+					}
+
+					if err := pc.conn.SetReadDeadline(
+						time.Now().Add(time.Duration(pc.keepAlive) * time.Second),
+					); err != nil {
+						pc.endState <- endState{err: err}
+						return
+					}
+
+					continue
+				}
+
 				if errors.Is(err, io.EOF) {
 					pc.endState <- endState{}
 					return
 				}
+
 				pc.endState <- endState{err: err}
 				return
 			}
@@ -157,15 +178,6 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 			if err := pc.readMessage(ctx, buff, &received); err != nil {
 				pc.endState <- endState{err: err}
 				return
-			}
-
-			if n := time.Now(); n.After(tmark) {
-				tmark = n.Add(ka)
-				ping := []byte{0xC0, 0}
-				if _, err := pc.conn.Write(ping); err != nil {
-					pc.endState <- endState{err: err}
-					return
-				}
 			}
 		}
 	}()
@@ -210,6 +222,9 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 		pc.endState <- endState{}
 		return nil
 	case es := <-pc.endState:
+        if errors.Is(es.err, net.ErrClosed) {
+            return nil
+        }
 		return es.err
 	}
 }
