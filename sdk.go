@@ -229,7 +229,7 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 	}
 }
 
-func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, received *int) error {
+func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte) error {
 	switch pkt[0] {
 	case 0xe0:
 		pc.endState <- endState{}
