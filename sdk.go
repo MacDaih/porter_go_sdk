@@ -247,6 +247,7 @@ func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, received *i
 
 		*received++
 		if *received >= pc.receivedMax {
+			*received = 0
 			pc.endState <- endState{}
 			return nil
 		}
