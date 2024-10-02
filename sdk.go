@@ -140,7 +140,6 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 	}
 
 	go func() {
-		received := 0
 		for {
 			if !pc.connOpen {
 				pc.endState <- endState{}
@@ -176,7 +175,7 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 				return
 			}
 
-			if err := pc.readMessage(ctx, buff, &received); err != nil {
+			if err := pc.readMessage(ctx, buff); err != nil {
 				pc.endState <- endState{err: err}
 				return
 			}
@@ -243,13 +242,6 @@ func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, received *i
 
 		if err := pc.messageHandler(ctx, msg.Payload); err != nil {
 			return err
-		}
-
-		*received++
-		if *received >= pc.receivedMax {
-			*received = 0
-			pc.endState <- endState{}
-			return nil
 		}
 	default:
 	}
