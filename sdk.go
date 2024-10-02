@@ -143,6 +143,7 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 		received := 0
 		for {
 			if !pc.connOpen {
+				pc.endState <- endState{}
 				return
 			}
 
@@ -222,9 +223,9 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 		pc.endState <- endState{}
 		return nil
 	case es := <-pc.endState:
-        if errors.Is(es.err, net.ErrClosed) {
-            return nil
-        }
+		if errors.Is(es.err, net.ErrClosed) {
+			return nil
+		}
 		return es.err
 	}
 }
