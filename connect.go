@@ -2,6 +2,7 @@ package portergosdk
 
 import (
 	"bytes"
+	"fmt"
 	"slices"
 )
 
@@ -44,10 +45,12 @@ func buildConnect(
 
 	var flag uint8 = 0
 
+	fmt.Println(qos)
 	if qos > 0 {
 		flag ^= uint8(qos & QoSFlag)
 	}
 
+	fmt.Printf("flag = %08b\n", flag)
 	if creds != nil {
 		authProp, err := NewProperty(
 			EncString,

@@ -9,10 +9,12 @@ import (
 	"time"
 )
 
+type QoS uint8
+
 const (
-	QoSZero = iota
-	QoSOne
-	QoSTwo
+	QoSZero = 0x00
+	QoSOne  = 0x08
+	QoSTwo  = 0x18
 )
 
 type credential struct {
@@ -92,7 +94,7 @@ func WithTimeout(sec int) Option {
 func NewClient(
 	serverHost string,
 	keepAlive uint16,
-	qos int,
+	qos QoS,
 	options ...Option,
 ) *PorterClient {
 	es := make(chan endState, 1)
