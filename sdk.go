@@ -42,7 +42,7 @@ type PorterClient struct {
 
 	cleanStart bool
 
-	qos int
+	qos QoS
 
 	nextPacketID uint16
 
