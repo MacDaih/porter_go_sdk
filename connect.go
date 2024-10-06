@@ -18,7 +18,7 @@ func buildConnect(
 	cid string,
 	keepAlive uint16,
 	creds *credential,
-	qos int,
+	qos QoS,
 ) ([]byte, error) {
 	// make connect packet
 	var (
