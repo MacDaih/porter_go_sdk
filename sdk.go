@@ -148,8 +148,8 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 
 			buff := make([]byte, 1024)
 			if _, err := pc.conn.Read(buff); err != nil {
-				e := err.(net.Error)
-				if e.Timeout() {
+				e, ok := err.(net.Error)
+				if ok && e.Timeout() {
 					ping := []byte{0xC0, 0}
 					if _, err := pc.conn.Write(ping); err != nil {
 						pc.endState <- endState{err: err}
