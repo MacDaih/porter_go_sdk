@@ -46,8 +46,9 @@ type PorterClient struct {
 
 	creds *credential
 
-	receivedMax    int
-	messageHandler func(context.Context, []byte) error
+	receivedMax     int
+	sessionDuration time.Duration
+	messageHandler  func(context.Context, []byte) error
 
 	endState chan endState
 }
@@ -79,6 +80,12 @@ func WithMaxMessage(max int) Option {
 func WithCallBack(fn func(ctx context.Context, b []byte) error) Option {
 	return func(c *PorterClient) {
 		c.messageHandler = fn
+	}
+}
+
+func WithTimeout(sec int) Option {
+	return func(c *PorterClient) {
+		c.sessionDuration = time.Duration(sec) * time.Second
 	}
 }
 
@@ -204,7 +211,10 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 		pc.connOpen = false
 	}()
 
-	if err := pc.connect(ctx); err != nil {
+	connCtx, cancel := withTimedContext(ctx, pc.sessionDuration)
+	defer cancel()
+
+	if err := pc.connect(connCtx); err != nil {
 		return err
 	}
 
@@ -218,7 +228,7 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 	}
 
 	select {
-	case <-ctx.Done():
+	case <-connCtx.Done():
 		pc.endState <- endState{}
 		return nil
 	case es := <-pc.endState:
@@ -251,4 +261,12 @@ func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte) error {
 func (pc *PorterClient) Publish(topic string, message any) error {
 	// TODO implement
 	return nil
+}
+
+func withTimedContext(ctx context.Context, duration time.Duration) (context.Context, context.CancelFunc) {
+	if duration < 1 {
+		return ctx, func() {}
+	}
+
+	return context.WithTimeout(ctx, (duration * time.Second))
 }
