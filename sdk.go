@@ -231,9 +231,11 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 
 	select {
 	case <-connCtx.Done():
+		fmt.Println("context done")
 		pc.endState <- endState{}
 		return nil
 	case es := <-pc.endState:
+		fmt.Printf("end state : %w\n", es.err)
 		if errors.Is(es.err, net.ErrClosed) {
 			return nil
 		}
@@ -255,7 +257,6 @@ func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte) error {
 		if err := pc.messageHandler(ctx, msg.Payload); err != nil {
 			return err
 		}
-	default:
 	}
 	return nil
 }
