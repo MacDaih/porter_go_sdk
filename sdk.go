@@ -213,8 +213,7 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 		pc.connOpen = false
 	}()
 
-	connCtx, cancel := withTimedContext(ctx, pc.sessionDuration)
-	defer cancel()
+	connCtx, _ := withTimedContext(ctx, pc.sessionDuration)
 
 	if err := pc.connect(connCtx); err != nil {
 		return err
@@ -231,11 +230,9 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 
 	select {
 	case <-connCtx.Done():
-		fmt.Println("context done")
 		pc.endState <- endState{}
 		return nil
 	case es := <-pc.endState:
-		fmt.Printf("end state : %w\n", es.err)
 		if errors.Is(es.err, net.ErrClosed) {
 			return nil
 		}
