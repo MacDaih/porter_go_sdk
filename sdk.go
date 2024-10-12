@@ -185,6 +185,7 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 			}
 
 			if err := pc.readMessage(ctx, buff); err != nil {
+				fmt.Println(err)
 				return
 			}
 		}
