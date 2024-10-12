@@ -195,6 +195,9 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 }
 
 func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
+	connCtx, cancel := withTimedContext(ctx, pc.sessionDuration)
+	defer cancel()
+
 	addr, err := net.ResolveTCPAddr("tcp4", pc.serverHost)
 	if err != nil {
 		return err
@@ -212,8 +215,6 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 		pc.conn.Close()
 		pc.connOpen = false
 	}()
-
-	connCtx, _ := withTimedContext(ctx, pc.sessionDuration)
 
 	if err := pc.connect(connCtx); err != nil {
 		return err
@@ -265,7 +266,7 @@ func (pc *PorterClient) Publish(topic string, message any) error {
 
 func withTimedContext(ctx context.Context, duration time.Duration) (context.Context, context.CancelFunc) {
 	if duration < 1 {
-		return ctx, func() {}
+		return context.WithCancel(ctx)
 	}
 
 	return context.WithTimeout(ctx, (duration * time.Second))
