@@ -253,6 +253,7 @@ func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte) error {
 		}
 
 		if err := pc.messageHandler(ctx, msg.Payload); err != nil {
+			fmt.Printf("message handler error : %s\n", err.Error())
 			return err
 		}
 	}
