@@ -234,10 +234,13 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 		pc.endState <- endState{}
 		return nil
 	case es := <-pc.endState:
-		if errors.Is(es.err, net.ErrClosed) {
-			return nil
+		if es.err != nil {
+			fmt.Printf("end state error : %s\n", es.err.Error())
+			if errors.Is(es.err, net.ErrClosed) {
+				return nil
+			}
 		}
-		return es.err
+		return nil
 	}
 }
 
