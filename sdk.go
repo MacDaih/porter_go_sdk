@@ -185,7 +185,6 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 			}
 
 			if err := pc.readMessage(ctx, buff); err != nil {
-				pc.endState <- endState{err: err}
 				return
 			}
 		}
@@ -252,15 +251,19 @@ func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte) error {
 	case 0x30:
 		msg, err := readPublish(pkt)
 		if err != nil {
+			pc.endState <- endState{err: err}
 			return err
 		}
 
 		if err := pc.messageHandler(ctx, msg.Payload); err != nil {
 			fmt.Printf("message handler error : %s\n", err.Error())
+			pc.endState <- endState{err: err}
 			return err
 		}
+		return nil
+	default:
+		return nil
 	}
-	return nil
 }
 
 func (pc *PorterClient) Publish(topic string, message any) error {
