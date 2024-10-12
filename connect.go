@@ -2,7 +2,6 @@ package portergosdk
 
 import (
 	"bytes"
-	"fmt"
 	"slices"
 )
 

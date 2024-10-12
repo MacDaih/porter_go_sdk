@@ -102,7 +102,7 @@ func NewClient(
 	es := make(chan endState, 1)
 
 	if qos < 1 {
-		sessionInterval = 0
+		sessionExpiry = 0
 	}
 
 	pc := PorterClient{
@@ -194,9 +194,7 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 				return
 			}
 
-			if err := pc.readMessage(ctx, buff); err != nil {
-				return
-			}
+			pc.readMessage(ctx, buff)
 		}
 	}()
 
