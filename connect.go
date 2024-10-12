@@ -19,6 +19,7 @@ func buildConnect(
 	keepAlive uint16,
 	creds *credential,
 	qos QoS,
+	sessionExpiry uint32,
 ) ([]byte, error) {
 	// make connect packet
 	var (
@@ -45,12 +46,21 @@ func buildConnect(
 
 	var flag uint8 = 0
 
-	fmt.Println(qos)
 	if qos > 0 {
 		flag ^= uint8(qos & QoSFlag)
+		if sessionExpiry > 0 {
+			se, err := NewProperty(
+				Uint32,
+				0x11,
+				sessionExpiry,
+			)
+			if err != nil {
+				return nil, err
+			}
+			props = append(props, se)
+		}
 	}
 
-	fmt.Printf("flag = %08b\n", flag)
 	if creds != nil {
 		authProp, err := NewProperty(
 			EncString,

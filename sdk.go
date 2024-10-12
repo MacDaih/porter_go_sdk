@@ -50,6 +50,7 @@ type PorterClient struct {
 
 	receivedMax     int
 	sessionDuration time.Duration
+	sessionExpiry   uint32
 	messageHandler  func(context.Context, []byte) error
 
 	endState chan endState
@@ -95,9 +96,14 @@ func NewClient(
 	serverHost string,
 	keepAlive uint16,
 	qos QoS,
+	sessionExpiry uint32,
 	options ...Option,
 ) *PorterClient {
 	es := make(chan endState, 1)
+
+	if qos < 1 {
+		sessionInterval = 0
+	}
 
 	pc := PorterClient{
 		serverHost:     serverHost,
@@ -105,6 +111,7 @@ func NewClient(
 		endState:       es,
 		receivedMax:    10,
 		qos:            qos,
+		sessionExpiry:  sessionExpiry,
 		messageHandler: func(_ context.Context, _ []byte) error { return nil },
 	}
 
@@ -127,6 +134,7 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 		pc.keepAlive,
 		pc.creds,
 		pc.qos,
+		pc.sessionExpiry,
 	)
 
 	if err != nil {
@@ -187,7 +195,6 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 			}
 
 			if err := pc.readMessage(ctx, buff); err != nil {
-				fmt.Println(err)
 				return
 			}
 		}
@@ -246,26 +253,23 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 	}
 }
 
-func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte) error {
+func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte) {
 	switch pkt[0] {
 	case 0xe0:
 		pc.endState <- endState{}
-		return nil
+		return
 	case 0x30:
 		msg, err := readPublish(pkt)
 		if err != nil {
 			pc.endState <- endState{err: err}
-			return err
+			return
 		}
 
 		if err := pc.messageHandler(ctx, msg.Payload); err != nil {
-			fmt.Printf("message handler error : %s\n", err.Error())
 			pc.endState <- endState{err: err}
-			return err
 		}
-		return nil
-	default:
-		return nil
+	case 0x90:
+		// TODO implement suback read
 	}
 }
 
