@@ -15,6 +15,7 @@ func main() {
 		os.Getenv("SERVER_ADDR"),
 		10,
 		sdk.QoSOne,
+		900,
 		sdk.WithTimeout(10),
 		sdk.WithID("bb476565-c9c3-4f17-bb04-686d57bf1859"),
 		sdk.WithBasicCredentials("test", "test"),
