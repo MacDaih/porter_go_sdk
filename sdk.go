@@ -149,6 +149,8 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 	}
 
 	go func() {
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
 		for {
 			if !pc.connOpen {
 				pc.endState <- endState{}
@@ -277,5 +279,5 @@ func withTimedContext(ctx context.Context, duration time.Duration) (context.Cont
 		return context.WithCancel(ctx)
 	}
 
-	return context.WithTimeout(ctx, (duration * time.Second))
+	return context.WithTimeout(ctx, duration)
 }
