@@ -99,7 +99,6 @@ func NewClient(
 	sessionExpiry uint32,
 	options ...Option,
 ) *PorterClient {
-	es := make(chan endState, 1)
 
 	if qos < 1 {
 		sessionExpiry = 0
@@ -108,7 +107,6 @@ func NewClient(
 	pc := PorterClient{
 		serverHost:     serverHost,
 		keepAlive:      keepAlive,
-		endState:       es,
 		receivedMax:    10,
 		qos:            qos,
 		sessionExpiry:  sessionExpiry,
@@ -122,7 +120,7 @@ func NewClient(
 	return &pc
 }
 
-func (pc *PorterClient) connect(ctx context.Context) error {
+func (pc *PorterClient) connect(ctx context.Context, es chan endState) error {
 	if err := pc.conn.SetReadDeadline(
 		time.Now().Add(time.Duration(pc.keepAlive) * time.Second),
 	); err != nil {
@@ -161,7 +159,7 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 		defer cancel()
 		for {
 			if !pc.connOpen {
-				pc.endState <- endState{}
+				es <- endState{}
 				return
 			}
 
@@ -171,14 +169,14 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 				if ok && e.Timeout() {
 					ping := []byte{0xC0, 0}
 					if _, err := pc.conn.Write(ping); err != nil {
-						pc.endState <- endState{err: err}
+						es <- endState{err: err}
 						return
 					}
 
 					if err := pc.conn.SetReadDeadline(
 						time.Now().Add(time.Duration(pc.keepAlive) * time.Second),
 					); err != nil {
-						pc.endState <- endState{err: err}
+						es <- endState{err: err}
 						return
 					}
 
@@ -186,15 +184,15 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 				}
 
 				if errors.Is(err, io.EOF) {
-					pc.endState <- endState{}
+					es <- endState{}
 					return
 				}
 
-				pc.endState <- endState{err: err}
+				es <- endState{err: err}
 				return
 			}
 
-			pc.readMessage(ctx, buff)
+			pc.readMessage(ctx, buff, es)
 		}
 	}()
 
@@ -202,6 +200,8 @@ func (pc *PorterClient) connect(ctx context.Context) error {
 }
 
 func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
+
+	es := make(chan endState, 1)
 	connCtx, cancel := withTimedContext(ctx, pc.sessionDuration)
 	defer cancel()
 
@@ -223,7 +223,7 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 		pc.connOpen = false
 	}()
 
-	if err := pc.connect(connCtx); err != nil {
+	if err := pc.connect(connCtx, es); err != nil {
 		return err
 	}
 
@@ -238,11 +238,11 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 
 	select {
 	case <-connCtx.Done():
-		pc.endState <- endState{}
+		es <- endState{}
 		return nil
-	case es := <-pc.endState:
-		if es.err != nil {
-			if errors.Is(es.err, net.ErrClosed) {
+	case end := <-es:
+		if end.err != nil {
+			if errors.Is(end.err, net.ErrClosed) {
 				return nil
 			}
 		}
@@ -250,20 +250,21 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 	}
 }
 
-func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte) {
+func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, es chan endState) {
 	switch pkt[0] {
 	case 0xe0:
-		pc.endState <- endState{}
+		es <- endState{}
 		return
 	case 0x30:
 		msg, err := readPublish(pkt)
 		if err != nil {
-			pc.endState <- endState{err: err}
+			es <- endState{err: err}
 			return
 		}
 
 		if err := pc.messageHandler(ctx, msg.Payload); err != nil {
-			pc.endState <- endState{err: err}
+			es <- endState{err: err}
+			return
 		}
 	case 0x90:
 		// TODO implement suback read
