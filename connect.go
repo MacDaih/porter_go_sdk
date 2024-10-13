@@ -41,7 +41,7 @@ func buildConnect(
 		return nil, err
 	}
 
-	props := make([]Prop, 0, 7)
+	props := make([]Prop, 0, 9)
 
 	var flag uint8 = 0
 
