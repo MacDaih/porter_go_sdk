@@ -1,6 +1,7 @@
 package portergosdk
 
 import (
+	"bytes"
 	"fmt"
 )
 
@@ -12,12 +13,71 @@ const (
 )
 
 type AppMessage struct {
+	MessageQoS  QoS
 	TopicName   string
 	Format      bool
 	ContentType ContentType
 	Correlation string
 	SubID       string
 	Payload     []byte
+}
+
+func buildPublish(appMsg AppMessage) ([]byte, error) {
+	var header bytes.Buffer
+	header.WriteByte(PublishCMD ^ (0 << 1))
+
+	props := make([]Prop, 0, 7)
+	propLen := 0
+
+	if appMsg.Format {
+		prop, err := NewProperty(Byte, 0x01, 1)
+		if err != nil {
+			return nil, err
+		}
+		props = append(props, prop)
+		propLen += len(prop.value) + 1
+	}
+
+	if appMsg.ContentType != "" {
+		prop, err := NewProperty(EncString, 0x03, appMsg.ContentType)
+		if err != nil {
+			return nil, err
+		}
+		props = append(props, prop)
+		propLen += len(prop.value) + 1
+	}
+
+	var msg bytes.Buffer
+
+	if err := writeUTFString(&msg, appMsg.TopicName); err != nil {
+		return nil, err
+	}
+
+	if err := encodeVarInt(&msg, propLen); err != nil {
+		return nil, err
+	}
+	for _, p := range props {
+		msg.WriteByte(p.key)
+		if _, err := msg.Write(p.value); err != nil {
+			return nil, err
+		}
+	}
+
+	np, err := msg.Write(appMsg.Payload)
+	if err != nil {
+		return nil, err
+	}
+
+	remLen := (len(appMsg.TopicName) + 2) + evalBytes(uint32(propLen)) + propLen + np
+	if err := encodeVarInt(&header, remLen); err != nil {
+		return nil, err
+
+	}
+
+	if _, err := header.Write(msg.Bytes()); err != nil {
+		return nil, err
+	}
+	return header.Bytes(), nil
 }
 
 func readPublish(b []byte) (AppMessage, error) {

@@ -199,6 +199,56 @@ func (pc *PorterClient) connect(ctx context.Context, es chan endState) error {
 	return nil
 }
 
+func (pc *PorterClient) Publish(ctx context.Context, msg AppMessage) error {
+	es := make(chan endState, 1)
+	connCtx, cancel := withTimedContext(ctx, pc.sessionDuration)
+	defer cancel()
+
+	addr, err := net.ResolveTCPAddr("tcp4", pc.serverHost)
+	if err != nil {
+		return err
+	}
+
+	conn, err := net.DialTCP("tcp", nil, addr)
+	if err != nil {
+		return err
+	}
+
+	pc.conn = conn
+	pc.connOpen = true
+
+	defer func() {
+		pc.conn.Close()
+		pc.connOpen = false
+	}()
+
+	if err := pc.connect(connCtx, es); err != nil {
+		return err
+	}
+
+	enc, err := buildPublish(msg)
+	if err != nil {
+		return err
+	}
+
+	if _, err := pc.conn.Write(enc); err != nil {
+		return err
+	}
+
+	select {
+	case <-connCtx.Done():
+		es <- endState{}
+		return nil
+	case end := <-es:
+		if end.err != nil {
+			if errors.Is(end.err, net.ErrClosed) {
+				return nil
+			}
+		}
+		return nil
+	}
+}
+
 func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 
 	es := make(chan endState, 1)
@@ -269,11 +319,6 @@ func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, es chan end
 	case 0x90:
 		// TODO implement suback read
 	}
-}
-
-func (pc *PorterClient) Publish(topic string, message any) error {
-	// TODO implement
-	return nil
 }
 
 func withTimedContext(ctx context.Context, duration time.Duration) (context.Context, context.CancelFunc) {
