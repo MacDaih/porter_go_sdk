@@ -19,11 +19,11 @@ func main() {
 	)
 
 	msg := sdk.AppMessage{
-		MessageQoS:  sdk.QoSZero,
-		TopicName:   "app_telemetry",
-		Format:      true,
-		ContentType: sdk.Json,
-		Payload:     []byte(`{"data": {"value": 100}, "text_field": "lorem ipsum blablaba", "amount":100.00}`),
+		MessageQoS: sdk.QoSZero,
+		TopicName:  "app_telemetry",
+		Format:     true,
+		Content:    sdk.Json,
+		Payload:    []byte(`{"data": {"value": 100}, "text_field": "lorem ipsum blablaba", "amount":100.00}`),
 	}
 	if err := client.Publish(context.Background(), msg); err != nil {
 		panic(err)

@@ -20,8 +20,8 @@ func main() {
 		sdk.WithID("d14ce97e-f289-4439-b2e0-153b07784749"),
 		sdk.WithBasicCredentials("test", "test"),
 		sdk.WithCallBack(
-			func(_ context.Context, payload []byte) error {
-			    fmt.Println(string(payload))
+			func(_ context.Context, _ sdk.ContentType, payload []byte) error {
+				fmt.Println(string(payload))
 				return nil
 			},
 		),

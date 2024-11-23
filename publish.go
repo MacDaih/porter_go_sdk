@@ -8,15 +8,15 @@ import (
 type ContentType string
 
 const (
-	Json = "application/json"
-	Text = "text/plain"
+	Json ContentType = "application/json"
+	Text ContentType = "text/plain"
 )
 
 type AppMessage struct {
 	MessageQoS  QoS
 	TopicName   string
 	Format      bool
-	ContentType ContentType
+	Content     ContentType
 	Correlation string
 	SubID       string
 	Payload     []byte
@@ -38,8 +38,8 @@ func buildPublish(appMsg AppMessage) ([]byte, error) {
 		propLen += len(prop.value) + 1
 	}
 
-	if appMsg.ContentType != "" {
-		prop, err := NewProperty(EncString, 0x03, string(appMsg.ContentType))
+	if appMsg.Content != "" {
+		prop, err := NewProperty(EncString, 0x03, string(appMsg.Content))
 		if err != nil {
 			return nil, err
 		}
@@ -103,7 +103,8 @@ func buildPublish(appMsg AppMessage) ([]byte, error) {
 func readPublish(b []byte) (AppMessage, error) {
 	var msg AppMessage
 	cursor := 1
-	// TODO publis cmd with retain, dup and qos
+	// TODO publish cmd with retain, dup and qos
+
 	// Remaining length
 	length, err := decodeVarint(b[1:])
 	if err != nil {
@@ -113,8 +114,8 @@ func readPublish(b []byte) (AppMessage, error) {
 	if len(b) < int(length) {
 		return msg, fmt.Errorf("malformed packet : invalid length")
 	}
-
 	cursor += evalBytes(length)
+
 	// Read topic
 	topic, err := readUTFString(b[cursor:])
 	if err != nil {
@@ -156,7 +157,7 @@ func readPublish(b []byte) (AppMessage, error) {
 			if err != nil {
 				return msg, err
 			}
-			msg.ContentType = ContentType(content)
+			msg.Content = ContentType(content)
 			cursor += len(content) + 2
 		default:
 			cursor++

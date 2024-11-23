@@ -51,7 +51,7 @@ type PorterClient struct {
 	receivedMax     int
 	sessionDuration time.Duration
 	sessionExpiry   uint32
-	messageHandler  func(context.Context, []byte) error
+	messageHandler  func(context.Context, ContentType, []byte) error
 
 	endState chan endState
 }
@@ -80,7 +80,7 @@ func WithMaxMessage(max int) Option {
 	}
 }
 
-func WithCallBack(fn func(ctx context.Context, b []byte) error) Option {
+func WithCallBack(fn func(ctx context.Context, content ContentType, b []byte) error) Option {
 	return func(c *PorterClient) {
 		c.messageHandler = fn
 	}
@@ -110,7 +110,7 @@ func NewClient(
 		receivedMax:    10,
 		qos:            qos,
 		sessionExpiry:  sessionExpiry,
-		messageHandler: func(_ context.Context, _ []byte) error { return nil },
+		messageHandler: func(_ context.Context, _ ContentType, _ []byte) error { return nil },
 	}
 
 	for _, fn := range options {
@@ -314,7 +314,7 @@ func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, es chan end
 			es <- endState{err: err}
 			return
 		}
-		if err := pc.messageHandler(ctx, msg.Payload); err != nil {
+		if err := pc.messageHandler(ctx, msg.Content, msg.Payload); err != nil {
 			es <- endState{err: err}
 			return
 		}
