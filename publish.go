@@ -8,8 +8,8 @@ import (
 type ContentType string
 
 const (
-	Json = "json"
-	Text = "text"
+	Json = "application/json"
+	Text = "text/plain"
 )
 
 type AppMessage struct {
