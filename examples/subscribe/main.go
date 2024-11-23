@@ -17,11 +17,11 @@ func main() {
 		sdk.QoSOne,
 		900,
 		sdk.WithTimeout(10),
-		sdk.WithID("bb476565-c9c3-4f17-bb04-686d57bf1859"),
+		sdk.WithID("d14ce97e-f289-4439-b2e0-153b07784749"),
 		sdk.WithBasicCredentials("test", "test"),
 		sdk.WithCallBack(
 			func(_ context.Context, payload []byte) error {
-				fmt.Println(string(payload))
+			    fmt.Println(string(payload))
 				return nil
 			},
 		),
@@ -30,7 +30,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(120)*time.Second)
 	defer cancel()
 
-	if err := client.Subscribe(ctx, []string{"/app_telemetry/"}); err != nil {
+	if err := client.Subscribe(ctx, []string{"app_telemetry"}); err != nil {
 		panic(err)
 	}
 

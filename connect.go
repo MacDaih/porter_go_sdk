@@ -47,17 +47,18 @@ func buildConnect(
 
 	if qos > 0 {
 		flag ^= uint8(qos & QoSFlag)
-		if sessionExpiry > 0 {
-			se, err := NewProperty(
-				Uint32,
-				0x11,
-				sessionExpiry,
-			)
-			if err != nil {
-				return nil, err
-			}
-			props = append(props, se)
+	}
+
+	if sessionExpiry > 0 {
+		se, err := NewProperty(
+			Uint32,
+			0x11,
+			sessionExpiry,
+		)
+		if err != nil {
+			return nil, err
 		}
+		props = append(props, se)
 	}
 
 	if creds != nil {

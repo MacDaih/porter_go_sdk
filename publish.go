@@ -30,7 +30,7 @@ func buildPublish(appMsg AppMessage) ([]byte, error) {
 	propLen := 0
 
 	if appMsg.Format {
-		prop, err := NewProperty(Byte, 0x01, 1)
+		prop, err := NewProperty(Byte, 0x01, byte(0x01))
 		if err != nil {
 			return nil, err
 		}
@@ -39,7 +39,7 @@ func buildPublish(appMsg AppMessage) ([]byte, error) {
 	}
 
 	if appMsg.ContentType != "" {
-		prop, err := NewProperty(EncString, 0x03, appMsg.ContentType)
+		prop, err := NewProperty(EncString, 0x03, string(appMsg.ContentType))
 		if err != nil {
 			return nil, err
 		}
@@ -53,6 +53,10 @@ func buildPublish(appMsg AppMessage) ([]byte, error) {
 		return nil, err
 	}
 
+	if err := writeUint16(&msg, 0); err != nil {
+		return nil, err
+	}
+
 	if err := encodeVarInt(&msg, propLen); err != nil {
 		return nil, err
 	}
@@ -63,9 +67,25 @@ func buildPublish(appMsg AppMessage) ([]byte, error) {
 		}
 	}
 
-	np, err := msg.Write(appMsg.Payload)
-	if err != nil {
-		return nil, err
+	var (
+		payload bytes.Buffer
+		np      int
+		perr    error
+	)
+	if appMsg.Format {
+		if err := writeUTFString(&payload, string(appMsg.Payload)); err != nil {
+			return nil, err
+		}
+
+		np, perr = msg.Write(payload.Bytes())
+		if perr != nil {
+			return nil, perr
+		}
+	} else {
+		np, perr = msg.Write(appMsg.Payload)
+		if perr != nil {
+			return nil, perr
+		}
 	}
 
 	remLen := (len(appMsg.TopicName) + 2) + evalBytes(uint32(propLen)) + propLen + np
@@ -103,15 +123,21 @@ func readPublish(b []byte) (AppMessage, error) {
 	msg.TopicName = topic
 
 	cursor += len(topic) + 2
-	// No packet ID for now
+
+	// TODO No packet ID for now
+	if _, err := readUint16(b[cursor:]); err != nil {
+		return msg, err
+	}
+	cursor += 2
 
 	//read props
 	propsLen, err := decodeVarint(b[cursor:])
 	if err != nil {
 		return msg, err
 	}
+	cursor += evalBytes(propsLen)
 
-	ceil := cursor + int(propsLen)
+	ceil := cursor + (int(propsLen) - 1)
 	for cursor < ceil {
 		if cursor > int(length) {
 			return msg, fmt.Errorf("malformed packet : cursor exceeded length")
@@ -131,15 +157,16 @@ func readPublish(b []byte) (AppMessage, error) {
 				return msg, err
 			}
 			msg.ContentType = ContentType(content)
+			cursor += len(content) + 2
 		default:
 			cursor++
 			continue
 		}
 	}
 
+	raw := b[cursor:]
 	if msg.Format {
-		payload, err := readUTFString(b[cursor+1:])
-		//msg.Payload = b[cursor+1 : length-1]
+		payload, err := readUTFString(raw)
 		if err != nil {
 			return msg, err
 		}

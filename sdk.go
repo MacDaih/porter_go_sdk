@@ -289,12 +289,14 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 	select {
 	case <-connCtx.Done():
 		es <- endState{}
-		return nil
+		_, err := pc.conn.Write([]byte{224, 0})
+		return err
 	case end := <-es:
 		if end.err != nil {
 			if errors.Is(end.err, net.ErrClosed) {
 				return nil
 			}
+			return end.err
 		}
 		return nil
 	}
@@ -303,6 +305,7 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, es chan endState) {
 	switch pkt[0] {
 	case 0xe0:
+		// TODO read disconnect code
 		es <- endState{}
 		return
 	case 0x30:
@@ -311,13 +314,15 @@ func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, es chan end
 			es <- endState{err: err}
 			return
 		}
-
 		if err := pc.messageHandler(ctx, msg.Payload); err != nil {
 			es <- endState{err: err}
 			return
 		}
 	case 0x90:
 		// TODO implement suback read
+	default:
+		es <- endState{}
+		return
 	}
 }
 
