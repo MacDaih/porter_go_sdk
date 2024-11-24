@@ -5,7 +5,6 @@ import (
 	"slices"
 )
 
-
 func buildSubscribe(
 	topics []string,
 	pktID uint16,
@@ -60,4 +59,18 @@ func buildSubscribe(
 	}
 
 	return msg.Bytes(), nil
+}
+
+func readSubAck(b []byte) ([]byte, error) {
+	cursor := 1
+	remLen, err := decodeVarint(b[cursor:])
+	if err != nil {
+		return nil, err
+	}
+
+	cursor += evalBytes(remLen)
+
+	// TODO read properites, zeroed for now
+
+	return b[cursor:], nil
 }

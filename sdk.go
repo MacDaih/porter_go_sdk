@@ -57,7 +57,7 @@ type PorterClient struct {
 	sessionExpiry   uint32
 	messageHandler  func(context.Context, ContentType, []byte) error
 
-	subscribed []string
+	subscribed map[string]uint8
 
 	endState chan endState
 }
@@ -110,7 +110,6 @@ func NewClient(
 		sessionExpiry = 0
 	}
 
-	subCache := make([]string, 0, maxSubscription)
 	pc := PorterClient{
 		serverHost:     serverHost,
 		keepAlive:      keepAlive,
@@ -118,7 +117,7 @@ func NewClient(
 		qos:            qos,
 		sessionExpiry:  sessionExpiry,
 		messageHandler: func(_ context.Context, _ ContentType, _ []byte) error { return nil },
-		subscribed:     subCache,
+		subscribed:     make(map[string]uint8),
 	}
 
 	for _, fn := range options {
@@ -257,11 +256,27 @@ func (pc *PorterClient) Publish(ctx context.Context, msg AppMessage) error {
 	}
 }
 
-func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
+type topicsKeyType string
 
+const topicsKey topicsKeyType = "topics"
+
+func withTopics(ctx context.Context, topics []string) context.Context {
+	return context.WithValue(ctx, topicsKey, topics)
+}
+
+func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 	es := make(chan endState, 1)
 	connCtx, cancel := withTimedContext(ctx, pc.sessionDuration)
 	defer cancel()
+
+	newTopics := make([]string, 0, len(topics))
+
+	for _, topic := range topics {
+		if _, ok := pc.subscribed[topic]; !ok {
+			newTopics = append(newTopics, topic)
+		}
+	}
+	connCtx = withTopics(connCtx, newTopics)
 
 	addr, err := net.ResolveTCPAddr("tcp4", pc.serverHost)
 	if err != nil {
@@ -285,13 +300,15 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 		return err
 	}
 
-	msg, err := buildSubscribe(topics, 1)
-	if err != nil {
-		return err
-	}
+	if len(newTopics) > 0 {
+		msg, err := buildSubscribe(newTopics, 1)
+		if err != nil {
+			return err
+		}
 
-	if _, err := pc.conn.Write(msg); err != nil {
-		return err
+		if _, err := pc.conn.Write(msg); err != nil {
+			return err
+		}
 	}
 
 	select {
@@ -324,8 +341,8 @@ func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, es chan end
 				status: res.description,
 				reason: res.reason,
 			}
+			return
 		}
-		return
 	case 0x30:
 		msg, err := readPublish(pkt)
 		if err != nil {
@@ -337,7 +354,26 @@ func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, es chan end
 			return
 		}
 	case 0x90:
-		// TODO implement suback read
+		topics, ok := ctx.Value(topicsKey).([]string)
+		if !ok {
+			//
+		}
+
+		b, err := readSubAck(pkt)
+		if err != nil {
+			es <- endState{err: err}
+			return
+		}
+
+		if len(topics) != len(b) {
+			return
+		}
+
+		for idx, topic := range topics {
+			if b[idx] >= 0 && b[idx] <= 2 {
+				pc.subscribed[topic] = uint8(b[idx])
+			}
+		}
 	default:
 		es <- endState{}
 		return
