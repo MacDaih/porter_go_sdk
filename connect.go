@@ -2,15 +2,59 @@ package portergosdk
 
 import (
 	"bytes"
+	"errors"
+	"fmt"
 	"slices"
 )
 
-func getConnectLength(s Session, props []Prop) int {
-	return 0
-}
+// TODO
+var ErrNotSuccess = errors.New("failed connection")
 
-func CreateConnectPacket(s Session, length int) ([]byte, error) {
-	return nil, nil
+func parseReasonCode(code byte) string {
+	switch code {
+	case 0x81:
+		return "malformed_packet"
+	case 0x82:
+		return "protocol_error"
+	case 0x83:
+		return "implementation_error"
+	case 0x84:
+		return "unsupported_protocol_version"
+	case 0x85:
+		return "invalid_client_id"
+	case 0x86:
+		return "bad_creadentials"
+	case 0x87:
+		return "not_authorized"
+	case 0x88:
+		return "server_unavailable"
+	case 0x89:
+		return "server_busy"
+	case 0x8a:
+		return "banned"
+	case 0x8c:
+		return "bad_authentication_method"
+	case 0x90:
+		return "invalid_topic"
+	case 0x95:
+		return "packet_too_large"
+	case 0x97:
+		return "quota_exceeded"
+	case 0x99:
+		return "payload_format_invalid"
+	case 0x9a:
+		return "retain_not_supported"
+	case 0x9b:
+		return "qos_not_supported"
+	case 0x9c:
+		return "user_another_server"
+	case 0x9d:
+		return "server_moved"
+	case 0x9f:
+		return "connection_rate_exceeded"
+	default:
+		return "unspecified_error"
+	}
 }
 
 func buildConnect(
@@ -157,4 +201,121 @@ func buildConnect(
 	}
 
 	return msg.Bytes(), nil
+}
+
+type connackResponse struct {
+	code            byte
+	description     string
+	reason          string
+	assignedID      string
+	serverExpiry    uint16
+	serverKeepAlive uint16
+}
+
+func readConnack(b []byte) (connackResponse, error) {
+	cursor := 1
+	length, err := decodeVarint(b[cursor:])
+	if err != nil {
+		return connackResponse{description: "failed to read packet"}, err
+	}
+	cursor += evalBytes(length)
+
+	// Session flag
+	_ = b[cursor]
+	cursor++
+
+	// Reason Code
+	code := b[cursor]
+	cr := connackResponse{
+		code:        code,
+		description: parseReasonCode(code),
+	}
+	cursor++
+
+	// Properties
+	propsLen, err := decodeVarint(b[cursor:])
+	if err != nil {
+		return cr, err
+	}
+	cursor += evalBytes(propsLen)
+
+	ceil := cursor + (int(propsLen) - 1)
+	for cursor < ceil {
+		if cursor > int(length) {
+			return cr, fmt.Errorf("malformed packet : cursor exceeded length")
+		}
+
+		switch b[cursor] {
+		// Session Expiry
+		case 0x11:
+			cursor++
+			exp, err := readUint16(b[cursor:])
+			if err != nil {
+				return cr, err
+			}
+			cursor += 2
+			cr.serverExpiry = exp
+			// Receive Maximum
+		case 0x21:
+			cursor++
+			_, err := readUint16(b[cursor:])
+			if err != nil {
+				return cr, err
+			}
+			cursor += 2
+		// Max QOS
+		case 0x24:
+			cursor++
+			_ = b[cursor]
+			cursor++
+		// Max Packet Size
+		case 0x27:
+			cursor++
+			_, err := readUint32(b[cursor:])
+			if err != nil {
+				return cr, err
+			}
+			cursor += 4
+		// Assigned Client ID
+		case 0x12:
+			cursor++
+			id, err := readUTFString(b[cursor:])
+			if err != nil {
+				return cr, err
+			}
+			cursor += len(id) + 2
+			cr.assignedID = id
+		// Reason
+		case 0x1f:
+			cursor++
+			reason, err := readUTFString(b[cursor:])
+			if err != nil {
+				return cr, err
+			}
+			cursor += len(reason) + 2
+			cr.reason = reason
+			// Server Keep Alive
+		case 0x13:
+			cursor++
+			ka, err := readUint16(b[cursor:])
+			if err != nil {
+				return cr, err
+			}
+			cursor += 2
+			cr.serverKeepAlive = ka
+			// Authentication Method
+		case 0x15:
+			cursor++
+			method, err := readUTFString(b[cursor:])
+			if err != nil {
+				return cr, err
+			}
+			cursor += len(method) + 2
+		default:
+			cursor++
+			continue
+		}
+	}
+
+	return cr, nil
 }

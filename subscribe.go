@@ -5,7 +5,6 @@ import (
 	"slices"
 )
 
-var subscribed []string
 
 func buildSubscribe(
 	topics []string,

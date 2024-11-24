@@ -17,6 +17,8 @@ const (
 	QoSTwo  = 0x18
 )
 
+const maxSubscription = 10
+
 type credential struct {
 	authMethod string
 	usr        *string
@@ -26,7 +28,9 @@ type credential struct {
 type SubscribeCallback func() error
 
 type endState struct {
-	err error
+	err    error
+	status string
+	reason string
 }
 
 type PorterClient struct {
@@ -52,6 +56,8 @@ type PorterClient struct {
 	sessionDuration time.Duration
 	sessionExpiry   uint32
 	messageHandler  func(context.Context, ContentType, []byte) error
+
+	subscribed []string
 
 	endState chan endState
 }
@@ -104,6 +110,7 @@ func NewClient(
 		sessionExpiry = 0
 	}
 
+	subCache := make([]string, 0, maxSubscription)
 	pc := PorterClient{
 		serverHost:     serverHost,
 		keepAlive:      keepAlive,
@@ -111,6 +118,7 @@ func NewClient(
 		qos:            qos,
 		sessionExpiry:  sessionExpiry,
 		messageHandler: func(_ context.Context, _ ContentType, _ []byte) error { return nil },
+		subscribed:     subCache,
 	}
 
 	for _, fn := range options {
@@ -307,6 +315,16 @@ func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, es chan end
 	case 0xe0:
 		// TODO read disconnect code
 		es <- endState{}
+		return
+	case 0x20:
+		res, err := readConnack(pkt)
+		if err != nil {
+			es <- endState{
+				err:    err,
+				status: res.description,
+				reason: res.reason,
+			}
+		}
 		return
 	case 0x30:
 		msg, err := readPublish(pkt)

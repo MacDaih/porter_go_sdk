@@ -25,6 +25,13 @@ func readUint16(input []byte) (uint16, error) {
 	return uint16(input[0]<<8 ^ input[1]), nil
 }
 
+func readUint32(input []byte) (uint32, error) {
+	if len(input) < 4 {
+		return 0, fmt.Errorf("failed to read unsigned 16 bytes integer : invalid length")
+	}
+	return uint32((input[0] << 24) ^ (input[1] << 16) ^ (input[2] << 8) ^ input[3]), nil
+}
+
 func writeUint32(buff *bytes.Buffer, in uint32) error {
 
 	if err := buff.WriteByte(byte((in & 0xff000000) >> 24)); err != nil {
