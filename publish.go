@@ -148,18 +148,15 @@ func readPublish(b []byte) (AppMessage, error) {
 		case 0x01:
 			cursor++
 			// payload format indicator
-			indicator := b[cursor]
-			msg.Format = indicator >= 1
-			cursor++
+			msg.Format = readIncrementByte(b[cursor:], &cursor) >= 1
 		case 0x03:
 			cursor++
 			// content type
-			content, err := readUTFString(b[cursor:])
+			content, err := readStringIncrement(b[cursor:], &cursor)
 			if err != nil {
 				return msg, err
 			}
 			msg.Content = ContentType(content)
-			cursor += len(content) + 2
 		default:
 			cursor++
 			continue

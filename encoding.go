@@ -136,3 +136,43 @@ func evalBytes(value uint32) int {
 		return 5
 	}
 }
+
+func readIncrementByte(in []byte, cursor *int) byte {
+	curr := *cursor
+	*cursor++
+	return in[curr]
+}
+
+func readIncrementUint16(in []byte, cursor *int) (uint16, error) {
+	curr := *cursor
+	*cursor += 2
+	return readUint16(in[curr:])
+}
+
+func readIncrementUint32(in []byte, cursor *int) (uint32, error) {
+	curr := *cursor
+	*cursor += 4
+	return readUint32(in[curr:])
+}
+
+func readVarintIncrement(in []byte, cursor *int) (uint32, error) {
+	curr := *cursor
+	varint, err := decodeVarint(in[curr:])
+	if err != nil {
+		return 0, err
+	}
+	*cursor += evalBytes(varint)
+	return varint, nil
+}
+
+func readStringIncrement(in []byte, cursor *int) (string, error) {
+	curr := *cursor
+
+	str, err := readUTFString(in[curr:])
+	if err != nil {
+		return "", err
+	}
+
+	*cursor += len(str) + 2
+	return str, nil
+}
