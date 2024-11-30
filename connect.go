@@ -13,47 +13,47 @@ var ErrNotSuccess = errors.New("failed connection")
 func parseReasonCode(code byte) string {
 	switch code {
 	case 0x81:
-		return "malformed_packet"
+		return "Malformed Packet"
 	case 0x82:
-		return "protocol_error"
+		return "Protocol Error"
 	case 0x83:
-		return "implementation_error"
+		return "Implementation Error"
 	case 0x84:
-		return "unsupported_protocol_version"
+		return "Unsupported Protocol Version"
 	case 0x85:
-		return "invalid_client_id"
+		return "Invalid Client ID"
 	case 0x86:
-		return "bad_creadentials"
+		return "Bad Creadentials"
 	case 0x87:
-		return "not_authorized"
+		return "Not Authorized"
 	case 0x88:
-		return "server_unavailable"
+		return "Server Unavailable"
 	case 0x89:
-		return "server_busy"
+		return "Server Busy"
 	case 0x8a:
-		return "banned"
+		return "Banned"
 	case 0x8c:
-		return "bad_authentication_method"
+		return "Bad Authentication Method"
 	case 0x90:
-		return "invalid_topic"
+		return "Invalid Topic"
 	case 0x95:
-		return "packet_too_large"
+		return "Packet Too Large"
 	case 0x97:
-		return "quota_exceeded"
+		return "Quota Exceeded"
 	case 0x99:
-		return "payload_format_invalid"
+		return "Payload Format Invalid"
 	case 0x9a:
-		return "retain_not_supported"
+		return "Retain Not Supported"
 	case 0x9b:
-		return "qos_not_supported"
+		return "QoS Not Supported"
 	case 0x9c:
-		return "user_another_server"
+		return "User Another Server"
 	case 0x9d:
-		return "server_moved"
+		return "Server Moved"
 	case 0x9f:
-		return "connection_rate_exceeded"
+		return "Connection Rate Exceeded"
 	default:
-		return "unspecified_error"
+		return "Unspecified Error"
 	}
 }
 
