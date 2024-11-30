@@ -246,57 +246,49 @@ func readConnack(b []byte) (connackResponse, error) {
 		}
 
 		switch b[cursor] {
-		// Session Expiry
-		case 0x11:
+		case 0x11: // Session Expiry
 			cursor++
 			exp, err := readIncrementUint16(b[cursor:], &cursor)
 			if err != nil {
 				return cr, err
 			}
 			cr.serverExpiry = exp
-			// Receive Maximum
-		case 0x21:
+		case 0x21: // Receive Maximum
 			cursor++
 			_, err := readIncrementUint16(b[cursor:], &cursor)
 			if err != nil {
 				return cr, err
 			}
-		// Max QOS
-		case 0x24:
+		case 0x24: // Max QOS
 			cursor++
 			_ = readIncrementByte(b[cursor:], &cursor)
-		// Max Packet Size
-		case 0x27:
+		case 0x27: // Max Packet Size
 			cursor++
 			if _, err := readIncrementUint32(b[cursor:], &cursor); err != nil {
 				return cr, err
 			}
-		// Assigned Client ID
-		case 0x12:
+		case 0x12: // Assigned Client ID
 			cursor++
 			id, err := readStringIncrement(b[cursor:], &cursor)
 			if err != nil {
 				return cr, err
 			}
 			cr.assignedID = id
-		// Reason
-		case 0x1f:
+		case 0x1f: // Reason
 			cursor++
 			reason, err := readStringIncrement(b[cursor:], &cursor)
 			if err != nil {
 				return cr, err
 			}
 			cr.reason = reason
-			// Server Keep Alive
-		case 0x13:
+		case 0x13: // Server Keep Alive
 			cursor++
 			ka, err := readIncrementUint16(b[cursor:], &cursor)
 			if err != nil {
 				return cr, err
 			}
 			cr.serverKeepAlive = ka
-			// Authentication Method
-		case 0x15:
+		case 0x15: // Authentication Method
 			cursor++
 			if _, err := readStringIncrement(b[cursor:], &cursor); err != nil {
 				return cr, err
