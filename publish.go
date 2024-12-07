@@ -140,7 +140,7 @@ func readPublish(b []byte) (AppMessage, error) {
 	cursor += evalBytes(propsLen)
 
 	ceil := cursor + int(propsLen)
-	fmt.Printf("prop len %d\n", propslen)
+	fmt.Printf("prop len %d\n", propsLen)
 	for cursor < ceil {
 		if cursor > int(length) {
 			return msg, fmt.Errorf("malformed packet : cursor exceeded length")
