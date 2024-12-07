@@ -124,6 +124,7 @@ func readPublish(b []byte) (AppMessage, error) {
 	}
 	msg.TopicName = topic
 
+	fmt.Println("msg topic ", topic)
 	cursor += len(topic) + 2
 
 	// TODO No packet ID for now
@@ -140,7 +141,8 @@ func readPublish(b []byte) (AppMessage, error) {
 	cursor += evalBytes(propsLen)
 
 	ceil := cursor + int(propsLen)
-	fmt.Printf("prop len %d\n", propsLen)
+
+	fmt.Printf("msg props len %d\n", propsLen)
 	for cursor < ceil {
 		if cursor > int(length) {
 			return msg, fmt.Errorf("malformed packet : cursor exceeded length")
@@ -150,7 +152,7 @@ func readPublish(b []byte) (AppMessage, error) {
 			cursor++
 			// payload format indicator
 
-			fmt.Printf("format value %d\n", b[cursor])
+			fmt.Printf("msg format %d\n", b[cursor])
 			msg.Format = readIncrementByte(b[cursor:], &cursor) >= 1
 		case 0x03:
 			cursor++
