@@ -158,6 +158,7 @@ func readPublish(b []byte) (AppMessage, error) {
 			}
 			msg.Content = ContentType(content)
 		default:
+			fmt.Printf("unknown %x\n", b[cursor])
 			cursor++
 			continue
 		}
@@ -170,6 +171,8 @@ func readPublish(b []byte) (AppMessage, error) {
 			return msg, err
 		}
 		msg.Payload = []byte(payload)
+	} else {
+		msg.Payload = raw
 	}
 
 	return msg, nil
