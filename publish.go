@@ -158,15 +158,15 @@ func readPublish(b []byte) (AppMessage, error) {
 			}
 			msg.Content = ContentType(content)
 		default:
-			cursor++
 			fmt.Printf("unknown 0x%x\n", b[cursor])
+			cursor++
 			continue
 		}
 	}
 
 	raw := b[cursor:]
 
-	fmt.Println(string(b[cursor]))
+	fmt.Println(string(b[cursor:]))
 	if msg.Format {
 		payload, err := readUTFString(raw)
 		if err != nil {
