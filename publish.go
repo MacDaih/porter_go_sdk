@@ -165,6 +165,8 @@ func readPublish(b []byte) (AppMessage, error) {
 	}
 
 	raw := b[cursor:]
+
+	fmt.Println(string(b[cursor]))
 	if msg.Format {
 		payload, err := readUTFString(raw)
 		if err != nil {
