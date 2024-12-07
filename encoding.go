@@ -168,6 +168,7 @@ func readVarintIncrement(in []byte, cursor *int) (uint32, error) {
 func readStringIncrement(in []byte, cursor *int) (string, error) {
 	curr := *cursor
 
+	fmt.Printf("before read string cursor val = %d\n", in[curr])
 	str, err := readUTFString(in[curr:])
 	if err != nil {
 		return "", err
