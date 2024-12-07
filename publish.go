@@ -149,6 +149,8 @@ func readPublish(b []byte) (AppMessage, error) {
 		case 0x01:
 			cursor++
 			// payload format indicator
+
+			fmt.Printf("format value %d\n", b[cursor])
 			msg.Format = readIncrementByte(b[cursor:], &cursor) >= 1
 		case 0x03:
 			cursor++
