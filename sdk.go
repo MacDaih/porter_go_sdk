@@ -211,7 +211,7 @@ func (pc *PorterClient) Publish(ctx context.Context, msg AppMessage) error {
 	connCtx, cancel := withTimedContext(ctx, pc.sessionDuration)
 	defer cancel()
 
-	addr, err := net.ResolveTCPAddr("tcp4", pc.serverHost)
+	addr, err := net.ResolveTCPAddr("tcp", pc.serverHost)
 	if err != nil {
 		return err
 	}
