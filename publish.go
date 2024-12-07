@@ -142,7 +142,7 @@ func readPublish(b []byte) (AppMessage, error) {
 
 	ceil := cursor + int(propsLen)
 
-	fmt.Println(b[cursor:])
+	fmt.Println(b)
 	for cursor < ceil {
 		if cursor > int(length) {
 			return msg, fmt.Errorf("malformed packet : cursor exceeded length")
@@ -151,13 +151,11 @@ func readPublish(b []byte) (AppMessage, error) {
 		case 0x01:
 			cursor++
 			// payload format indicator
-
 			fmt.Printf("msg format %d\n", b[cursor])
 			msg.Format = readIncrementByte(b[cursor:], &cursor) >= 1
 		case 0x03:
 			cursor++
 			// content type
-
 			fmt.Printf("next cursor %d\n", cursor)
 			content, err := readStringIncrement(b[cursor:], &cursor)
 			if err != nil {
