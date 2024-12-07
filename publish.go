@@ -167,6 +167,8 @@ func readPublish(b []byte) (AppMessage, error) {
 			fmt.Printf("msg content %s\n", content)
 			msg.Content = ContentType(content)
 		default:
+
+			fmt.Printf("what ?! %d", b[cursor])
 			cursor++
 			continue
 		}
