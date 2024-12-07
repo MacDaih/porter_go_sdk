@@ -158,7 +158,7 @@ func readPublish(b []byte) (AppMessage, error) {
 			cursor++
 			// content type
 
-			fmt.Printf("next 0x03 : %d %d", b[cursor], b[cursor+1])
+			fmt.Printf("next cursor %d\n", cursor)
 			content, err := readStringIncrement(b[cursor:], &cursor)
 			if err != nil {
 				return msg, err
