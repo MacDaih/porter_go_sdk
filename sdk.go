@@ -278,7 +278,7 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 	}
 	connCtx = withTopics(connCtx, newTopics)
 
-	addr, err := net.ResolveTCPAddr("tcp4", pc.serverHost)
+	addr, err := net.ResolveTCPAddr("tcp", pc.serverHost)
 	if err != nil {
 		return err
 	}
