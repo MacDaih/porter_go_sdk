@@ -343,6 +343,15 @@ func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, es chan end
 			}
 			return
 		}
+
+		if res.code > 0 {
+			es <- endState{
+				err:    fmt.Errorf("failed to connect to broker"),
+				status: res.description,
+				reason: res.reason,
+			}
+			return
+		}
 	case 0x30:
 		msg, err := readPublish(pkt)
 		if err != nil {
