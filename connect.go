@@ -250,9 +250,9 @@ func readConnack(b []byte) (connackResponse, error) {
 	fmt.Printf("debug prop_len %d\n", propsLen)
 	fmt.Printf("debug ceil %d\n", ceil)
 	for cursor < ceil {
-		if cursor > int(length) {
-			return cr, fmt.Errorf("malformed packet : cursor exceeded length")
-		}
+		//if cursor > int(length) {
+		//	return cr, fmt.Errorf("malformed packet : cursor exceeded length")
+		//}
 
 		switch b[cursor] {
 		case 0x11: // Session Expiry
