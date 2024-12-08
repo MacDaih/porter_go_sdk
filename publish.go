@@ -124,7 +124,6 @@ func readPublish(b []byte) (AppMessage, error) {
 	}
 	msg.TopicName = topic
 
-	fmt.Println("msg topic ", topic)
 	cursor += len(topic) + 2
 
 	// TODO No packet ID for now

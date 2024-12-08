@@ -213,12 +213,16 @@ type connackResponse struct {
 }
 
 func readConnack(b []byte) (connackResponse, error) {
-	fmt.Println(b)
 	cursor := 1
-	length, err := decodeVarint(b[cursor:])
+	length, err := decodeVarint(b[1:])
 	if err != nil {
 		return connackResponse{description: "failed to read packet"}, err
 	}
+
+	if len(b) < int(length) {
+		return msg, fmt.Errorf("malformed packet : invalid length")
+	}
+
 	cursor += evalBytes(length)
 
 	// Session flag
@@ -241,6 +245,11 @@ func readConnack(b []byte) (connackResponse, error) {
 	cursor += evalBytes(propsLen)
 
 	ceil := cursor + int(propsLen)
+
+    
+    fmt.Printf("debug len %d\n", length)
+    fmt.Printf("debug prop_len %d\n", propsLen)
+    fmt.Printf("debug ceil %d\n", ceil)
 	for cursor < ceil {
 		if cursor > int(length) {
 			return cr, fmt.Errorf("malformed packet : cursor exceeded length")
