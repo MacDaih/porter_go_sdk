@@ -161,6 +161,15 @@ func (pc *PorterClient) connect(ctx context.Context, es chan endState) error {
 		return fmt.Errorf("unexpected packet response code")
 	}
 
+	res, err := readConnack(connbuff)
+	if err != nil {
+		return err
+	}
+
+	if res.code > 0 {
+		return fmt.Errorf("failed to connect to broker : %s", res.description)
+	}
+
 	go func() {
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
@@ -328,31 +337,12 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 }
 
 func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, es chan endState) {
-    fmt.Printf("pkt %x received\n", pkt[0])
+	fmt.Printf("pkt %x received\n", pkt[0])
 	switch pkt[0] {
 	case 0xe0:
 		// TODO read disconnect code
 		es <- endState{}
 		return
-	case 0x20:
-		res, err := readConnack(pkt)
-		if err != nil {
-			es <- endState{
-				err:    err,
-				status: res.description,
-				reason: res.reason,
-			}
-			return
-		}
-
-		if res.code > 0 {
-			es <- endState{
-				err:    fmt.Errorf("failed to connect to broker"),
-				status: res.description,
-				reason: res.reason,
-			}
-			return
-		}
 	case 0x30:
 		msg, err := readPublish(pkt)
 		if err != nil {
