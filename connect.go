@@ -226,6 +226,7 @@ func readConnack(b []byte) (connackResponse, error) {
 
 	// Reason Code
 	code := b[cursor]
+    fmt.Println(code)
 	cr := connackResponse{
 		code:        code,
 		description: parseReasonCode(code),
