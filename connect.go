@@ -213,6 +213,7 @@ type connackResponse struct {
 }
 
 func readConnack(b []byte) (connackResponse, error) {
+	fmt.Println(b)
 	cursor := 1
 	length, err := decodeVarint(b[cursor:])
 	if err != nil {
@@ -226,7 +227,6 @@ func readConnack(b []byte) (connackResponse, error) {
 
 	// Reason Code
 	code := b[cursor]
-    fmt.Println(code)
 	cr := connackResponse{
 		code:        code,
 		description: parseReasonCode(code),
