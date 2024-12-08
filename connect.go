@@ -240,7 +240,7 @@ func readConnack(b []byte) (connackResponse, error) {
 	}
 	cursor += evalBytes(propsLen)
 
-	ceil := cursor + (int(propsLen) - 1)
+	ceil := cursor + int(propsLen)
 	for cursor < ceil {
 		if cursor > int(length) {
 			return cr, fmt.Errorf("malformed packet : cursor exceeded length")
