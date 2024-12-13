@@ -53,7 +53,7 @@ func buildPublish(appMsg AppMessage) ([]byte, error) {
 		return nil, err
 	}
 
-	if appMsg.QoS > 0 {
+	if appMsg.MessageQoS > 0 {
 		if err := writeUint16(&msg, 0); err != nil {
 			return nil, err
 		}
