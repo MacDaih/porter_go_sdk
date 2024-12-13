@@ -337,7 +337,6 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 }
 
 func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, es chan endState) {
-	fmt.Printf("pkt %x received\n", pkt[0])
 	switch pkt[0] {
 	case 0xe0:
 		// TODO read disconnect code
