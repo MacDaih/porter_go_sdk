@@ -53,8 +53,10 @@ func buildPublish(appMsg AppMessage) ([]byte, error) {
 		return nil, err
 	}
 
-	if err := writeUint16(&msg, 0); err != nil {
-		return nil, err
+	if appMsg.QoS > 0 {
+		if err := writeUint16(&msg, 0); err != nil {
+			return nil, err
+		}
 	}
 
 	if err := encodeVarInt(&msg, propLen); err != nil {
@@ -126,11 +128,13 @@ func readPublish(b []byte) (AppMessage, error) {
 
 	cursor += len(topic) + 2
 
-	// TODO No packet ID for now
-	if _, err := readUint16(b[cursor:]); err != nil {
-		return msg, err
-	}
-	cursor += 2
+    // qos
+    if (b[0] & 0x06) > 0 {
+        if _, err := readUint16(b[cursor:]); err != nil {
+            return msg, err
+        }
+        cursor += 2
+    }
 
 	//read props
 	propsLen, err := decodeVarint(b[cursor:])
