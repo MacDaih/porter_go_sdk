@@ -128,13 +128,13 @@ func readPublish(b []byte) (AppMessage, error) {
 
 	cursor += len(topic) + 2
 
-    // qos
-    if (b[0] & 0x06) > 0 {
-        if _, err := readUint16(b[cursor:]); err != nil {
-            return msg, err
-        }
-        cursor += 2
-    }
+	// qos
+	if (b[0] & 0x06) > 0 {
+		if _, err := readUint16(b[cursor:]); err != nil {
+			return msg, err
+		}
+		cursor += 2
+	}
 
 	//read props
 	propsLen, err := decodeVarint(b[cursor:])
@@ -169,17 +169,6 @@ func readPublish(b []byte) (AppMessage, error) {
 		}
 	}
 
-	raw := b[cursor:]
-
-	if msg.Format {
-		payload, err := readUTFString(raw)
-		if err != nil {
-			return msg, err
-		}
-		msg.Payload = []byte(payload)
-	} else {
-		msg.Payload = raw
-	}
-
+	msg.payload := b[cursor:]
 	return msg, nil
 }
