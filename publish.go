@@ -169,6 +169,6 @@ func readPublish(b []byte) (AppMessage, error) {
 		}
 	}
 
-	msg.payload = b[cursor:]
+	msg.Payload = b[cursor:]
 	return msg, nil
 }
