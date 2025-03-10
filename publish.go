@@ -114,7 +114,8 @@ func readPublish(b []byte) (AppMessage, error) {
 	if err != nil {
 		return msg, err
 	}
-
+    
+    b = b[:length]
 	if len(b) < int(length) {
 		return msg, fmt.Errorf("malformed packet : invalid length")
 	}
