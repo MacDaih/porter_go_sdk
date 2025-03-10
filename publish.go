@@ -104,7 +104,7 @@ func buildPublish(appMsg AppMessage) ([]byte, error) {
 
 func readPublish(b []byte) (AppMessage, error) {
     fmt.Printf("length : %d\n", len(b))
-    fmt.Println(b)
+    fmt.Println(b[])
 	var msg AppMessage
 	cursor := 1
 	// TODO publish cmd with retain, dup and qos
@@ -172,7 +172,8 @@ func readPublish(b []byte) (AppMessage, error) {
 	}
 
 	raw := b[cursor:length]
-
+    
+    fmt.Printf("%s\n",raw)
 	if msg.Format {
 		payload, err := readUTFString(raw)
 		if err != nil {
