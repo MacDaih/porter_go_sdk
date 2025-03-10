@@ -169,18 +169,18 @@ func readPublish(b []byte) (AppMessage, error) {
 		}
 	}
 
-	raw := b[cursor:length]
-    
-    fmt.Printf("%s\n",raw)
+	raw := b[cursor:]
 	if msg.Format {
 		payload, err := readUTFString(raw)
 		if err != nil {
 			return msg, err
 		}
+        fmt.Println(payload)
 		msg.Payload = []byte(payload)
 	} else {
 		msg.Payload = raw
 	}
 
+    fmt.Printf("%s\n",raw)
 	return msg, nil
 }
