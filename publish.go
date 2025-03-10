@@ -115,7 +115,6 @@ func readPublish(b []byte) (AppMessage, error) {
 		return msg, err
 	}
     
-    b = b[:length]
 	if len(b) < int(length) {
 		return msg, fmt.Errorf("malformed packet : invalid length")
 	}
@@ -172,7 +171,7 @@ func readPublish(b []byte) (AppMessage, error) {
 		}
 	}
 
-	raw := b[cursor:]
+	raw := b[cursor:length]
 
 	if msg.Format {
 		payload, err := readUTFString(raw)
