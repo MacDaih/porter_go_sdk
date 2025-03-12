@@ -175,12 +175,10 @@ func readPublish(b []byte) (AppMessage, error) {
 		if err != nil {
 			return msg, err
 		}
-        fmt.Println(payload)
 		msg.Payload = []byte(payload)
 	} else {
 		msg.Payload = raw
 	}
 
-    fmt.Printf("%s\n",raw)
 	return msg, nil
 }
