@@ -327,6 +327,7 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 		return err
 	case end := <-es:
 		if end.err != nil {
+            fmt.Println(err)
 			if _, err := pc.conn.Write([]byte{224, 0}); err != nil {
 				panic(err)
 			}
