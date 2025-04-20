@@ -181,6 +181,7 @@ func (pc *PorterClient) connect(ctx context.Context, es chan endState) error {
 
 			buff := make([]byte, 1024)
 			if _, err := pc.conn.Read(buff); err != nil {
+                fmt.Printf("buf length : %d %x\n",len(buff), buff[0])
 				e, ok := err.(net.Error)
 				if ok && e.Timeout() {
 					ping := []byte{0xC0, 0}
