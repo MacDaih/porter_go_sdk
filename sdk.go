@@ -181,7 +181,6 @@ func (pc *PorterClient) connect(ctx context.Context, es chan endState) error {
 
 			buff := make([]byte, 1024)
 			if _, err := pc.conn.Read(buff); err != nil {
-                fmt.Printf("buf length : %d %x\n",len(buff), buff[0])
 				e, ok := err.(net.Error)
 				if ok && e.Timeout() {
 					ping := []byte{0xC0, 0}
@@ -328,7 +327,6 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 		return err
 	case end := <-es:
 		if end.err != nil {
-            fmt.Println(err)
 			if _, err := pc.conn.Write([]byte{224, 0}); err != nil {
 				panic(err)
 			}
@@ -347,7 +345,7 @@ func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, es chan end
 		// TODO read disconnect code
 		es <- endState{}
 		return
-	case 0x30:
+	case 0x30, 0x33: // TODO handle pub flags
 		msg, err := readPublish(pkt)
 		if err != nil {
 			es <- endState{err: err}
