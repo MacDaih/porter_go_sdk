@@ -207,8 +207,13 @@ func (pc *PorterClient) connect(ctx context.Context, es chan endState) error {
 				es <- endState{err: err}
 				return
 			}
-
-			pc.readMessage(ctx, buff, es)
+            
+            pkt, err := newPacket(buff)
+            if err != nil {
+                es <-endState{err: err}
+                return 
+            }
+			pc.readMessage(ctx, pkt, es)
 		}
 	}()
 
@@ -339,13 +344,13 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 	}
 }
 
-func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, es chan endState) {
-	switch pkt[0] {
-	case 0xe0:
+func (pc *PorterClient) readMessage(ctx context.Context, pkt *packet, es chan endState) {
+	switch pkt.cmd {
+	case disconnectcmd:
 		// TODO read disconnect code
 		es <- endState{}
 		return
-	case 0x30, 0x33: // TODO handle pub flags
+	case publishcmd: // TODO handle pub flags
 		msg, err := readPublish(pkt)
 		if err != nil {
 			es <- endState{err: err}
@@ -355,7 +360,7 @@ func (pc *PorterClient) readMessage(ctx context.Context, pkt []byte, es chan end
 			es <- endState{err: err}
 			return
 		}
-	case 0x90:
+	case subackcmd:
 		topics, ok := ctx.Value(topicsKey).([]string)
 		if !ok {
 			//

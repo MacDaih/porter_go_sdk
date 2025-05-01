@@ -2,7 +2,6 @@ package portergosdk
 
 import (
 	"bytes"
-	"fmt"
 )
 
 type ContentType string
@@ -102,83 +101,28 @@ func buildPublish(appMsg AppMessage) ([]byte, error) {
 	return header.Bytes(), nil
 }
 
-func readPublish(b []byte) (AppMessage, error) {
+func readPublish(pkt *packet) (AppMessage, error) {
 	var msg AppMessage
-	cursor := 1
-	// TODO publish cmd with retain, dup and qos
-
-	// Remaining length
-	length, err := decodeVarint(b[1:])
-	if err != nil {
-		return msg, err
-	}
-    
-	if len(b) < int(length) {
-		return msg, fmt.Errorf("malformed packet : invalid length")
-	}
-
-	cursor += evalBytes(length)
 
 	// Read topic
-	topic, err := readUTFString(b[cursor:])
+	topic, err := pkt.readString()
 	if err != nil {
 		return msg, err
 	}
 	msg.TopicName = topic
 
-	cursor += len(topic) + 2
-
 	// qos
-	if (b[0] & 0x06) > 0 {
-		if _, err := readUint16(b[cursor:]); err != nil {
+	if (pkt.cmd & 0x06) > 0 {
+		if _, err := pkt.readUint16(); err != nil {
 			return msg, err
 		}
-		cursor += 2
 	}
 
-	//read props
-	propsLen, err := decodeVarint(b[cursor:])
-	if err != nil {
+    if _, err := pkt.readProperties(8); err != nil {
 		return msg, err
 	}
-	cursor += evalBytes(propsLen)
 
-	ceil := cursor + int(propsLen)
-
-	for cursor < ceil {
-		if cursor > int(length) {
-			return msg, fmt.Errorf("malformed packet : cursor exceeded length")
-		}
-		switch b[cursor] {
-		case 0x01:
-			cursor++
-			// payload format indicator
-			msg.Format = readIncrementByte(b[cursor:], &cursor) >= 1
-		case 0x03:
-			cursor++
-			// content type
-			content, err := readStringIncrement(b[cursor:], &cursor)
-			if err != nil {
-				return msg, err
-			}
-
-			msg.Content = ContentType(content)
-		default:
-			cursor++
-			continue
-		}
-	}
-
-	raw := b[cursor:]
-	if msg.Format {
-		payload, err := readUTFString(raw)
-		if err != nil {
-			return msg, err
-		}
-		msg.Payload = []byte(payload)
-	} else {
-		msg.Payload = raw
-	}
+	msg.Payload = pkt.buffer.Bytes()
 
 	return msg, nil
 }
