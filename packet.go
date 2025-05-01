@@ -38,7 +38,7 @@ var (
 
 func validateType(t byte) (packetType, error) {
 	pt := packetType(t)
-	switch pt {
+    switch (pt & 0xf0) {
 	case
 		connectcmd,
 		connackcmd,
