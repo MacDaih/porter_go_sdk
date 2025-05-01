@@ -38,7 +38,7 @@ var (
 
 func validateType(t byte) (packetType, error) {
 	pt := packetType(t)
-    switch (pt & 0xf0) {
+    switch pt {
 	case
 		connectcmd,
 		connackcmd,
@@ -62,7 +62,7 @@ func validateType(t byte) (packetType, error) {
 }
 
 func newPacket(buff []byte) (*packet, error) {
-	cmd := buff[0]
+	cmd := buff[0] & 0xf0
 	pt, err := validateType(cmd)
 	if err != nil {
 		return nil, err
