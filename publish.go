@@ -112,7 +112,7 @@ func readPublish(pkt *packet) (AppMessage, error) {
 	}
 	msg.TopicName = topic
 
-    fmt.Printf("debug topic : %s", topic)
+    fmt.Printf("debug topic : %s\n", topic)
 	// qos
 	if (pkt.flags & 0x06) > 0 {
 		id, err := pkt.readUint16()

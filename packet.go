@@ -80,7 +80,7 @@ func newPacket(buff []byte) (*packet, error) {
 	return &packet{
 		cmd:    pt,
 		flags:  flags,
-		buffer: bytes.NewBuffer(buff[remainingLen:]),
+		buffer: bytes.NewBuffer(buff[remainingLen+1:]),
 		length: remainingLen,
 	}, nil
 }
