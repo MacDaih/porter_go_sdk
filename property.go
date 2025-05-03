@@ -124,7 +124,7 @@ func readProperty(pkt *packet) (property, error) {
 		return property{
 			key:   pkey,
 			value: keyPair{key: key, value: value},
-			size:  len(key) + len(value),
+			size:  (len(key) + 2) + (len(value) + 2),
 		}, nil
 	case
 		MQTT_PROP_AUTHENTICATION_METHOD,
@@ -142,7 +142,7 @@ func readProperty(pkt *packet) (property, error) {
 		return property{
 			key:   pkey,
 			value: value,
-			size:  len(value),
+			size:  len(value) + 2,
 		}, nil
 	default:
 		return property{}, fmt.Errorf("unknown property %x", pkey)
@@ -150,7 +150,7 @@ func readProperty(pkt *packet) (property, error) {
 }
 
 func newProperty() property {
-    return property{}
+	return property{}
 }
 
 // func (p property)
