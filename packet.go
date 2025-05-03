@@ -1,6 +1,7 @@
 package portergosdk
 
 import (
+    "fmt"
 	"bytes"
 	"errors"
 )
@@ -75,6 +76,13 @@ func newPacket(buff []byte) (*packet, error) {
 	if err != nil {
 		return nil, err
 	}
+
+    // DEBUG
+    for _, b := range buff {
+        fmt.Printf("%x ", b)
+    }
+    fmt.Println()
+    //
 
 	remainingLen := evalBytes(length)
 	return &packet{
