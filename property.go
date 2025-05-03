@@ -43,7 +43,7 @@ const (
 	MQTT_PROP_SHARED_SUB_AVAILABLE         = 42
 )
 
-func readProperty(pkt *packet, cursor *int) (property, error) {
+func readProperty(pkt *packet) (property, error) {
 	pkey, err := pkt.readByte()
 	if err != nil {
 		return property{}, err
