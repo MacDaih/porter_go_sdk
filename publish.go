@@ -1,6 +1,7 @@
 package portergosdk
 
 import (
+    "fmt"
 	"bytes"
 )
 
@@ -112,6 +113,7 @@ func readPublish(pkt *packet) (AppMessage, error) {
 	msg.TopicName = topic
 
 	// qos
+    fmt.Println("flags = %8b\n", pkt.flags)
 	if (pkt.flags & 0x06) > 0 {
 		if _, err := pkt.readUint16(); err != nil {
 			return msg, err
