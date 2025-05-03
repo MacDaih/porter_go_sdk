@@ -27,6 +27,7 @@ const (
 
 type packet struct {
 	cmd    packetType
+	flags  byte
 	buffer *bytes.Buffer
 	length int
 }
@@ -38,7 +39,7 @@ var (
 
 func validateType(t byte) (packetType, error) {
 	pt := packetType(t)
-    switch pt {
+	switch pt {
 	case
 		connectcmd,
 		connackcmd,
@@ -63,6 +64,7 @@ func validateType(t byte) (packetType, error) {
 
 func newPacket(buff []byte) (*packet, error) {
 	cmd := buff[0] & 0xf0
+	flags = buf[0] & 0x0f
 	pt, err := validateType(cmd)
 	if err != nil {
 		return nil, err
@@ -76,6 +78,7 @@ func newPacket(buff []byte) (*packet, error) {
 	remainingLen := evalBytes(length)
 	return &packet{
 		cmd:    pt,
+		flags:  flags,
 		buffer: bytes.NewBuffer(buff[remainingLen:]),
 		length: remainingLen,
 	}, nil
