@@ -106,6 +106,16 @@ func (pkt *packet) readString() (string, error) {
 	return s, nil
 }
 
+func (pkt *packet) readUint32() (uint32, error) {
+	ui, err := readUint32(pkt.buffer.Bytes())
+	if err != nil {
+		return 0, err
+	}
+
+	_ = pkt.buffer.Next(4)
+	return ui, nil
+}
+
 func (pkt *packet) readUint16() (uint16, error) {
 	ui, err := readUint16(pkt.buffer.Bytes())
 	if err != nil {
