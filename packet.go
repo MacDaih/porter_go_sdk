@@ -143,8 +143,6 @@ func (pkt *packet) readProperties(max int) ([]property, error) {
 	}
 
 	for (pkt.buffer.Len() - int(propsLen)) > 0 {
-        fmt.Printf("packet buffer length %d\n", pkt.buffer.Len())
-        fmt.Printf("props length %d\n", int(propsLen))
 		prop, err := readProperty(pkt)
 		if err != nil {
 			return nil, err

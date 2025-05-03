@@ -1,6 +1,6 @@
 package portergosdk
 
-import "errors"
+import "fmt"
 
 type property struct {
 	key   byte
@@ -145,7 +145,7 @@ func readProperty(pkt *packet) (property, error) {
 			size:  len(value),
 		}, nil
 	default:
-		return property{}, errors.New("unknown property")
+		return property{}, fmt.Errorf("unknown property %x", pkey)
 	}
 }
 
