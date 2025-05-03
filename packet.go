@@ -76,7 +76,7 @@ func newPacket(buff []byte) (*packet, error) {
 	remainingLen := evalBytes(length)
 	return &packet{
 		cmd:    pt,
-		buffer: bytes.NewBuffer(buff[remainingLen+1:]),
+		buffer: bytes.NewBuffer(buff[remainingLen:]),
 		length: remainingLen,
 	}, nil
 }

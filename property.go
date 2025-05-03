@@ -148,3 +148,9 @@ func readProperty(pkt *packet) (property, error) {
 		return property{}, errors.New("unknown property")
 	}
 }
+
+func newProperty() property {
+    return property{}
+}
+
+// func (p property)
