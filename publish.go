@@ -112,14 +112,12 @@ func readPublish(pkt *packet) (AppMessage, error) {
 	}
 	msg.TopicName = topic
 
-    fmt.Printf("debug topic : %s\n", topic)
 	// qos
 	if (pkt.flags & 0x06) > 0 {
 		id, err := pkt.readUint16()
         if err != nil {
 			return msg, err
 		}
-        fmt.Printf("debug packet identifier : %d", id)
 	}
 
 	if _, err := pkt.readProperties(8); err != nil {
@@ -127,6 +125,5 @@ func readPublish(pkt *packet) (AppMessage, error) {
 	}
 
 	msg.Payload = pkt.buffer.Bytes()
-
 	return msg, nil
 }
