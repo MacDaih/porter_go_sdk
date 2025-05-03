@@ -64,7 +64,7 @@ func validateType(t byte) (packetType, error) {
 
 func newPacket(buff []byte) (*packet, error) {
 	cmd := buff[0] & 0xf0
-    flags := buf[0] & 0x0f
+    flags := buff[0] & 0x0f
 	pt, err := validateType(cmd)
 	if err != nil {
 		return nil, err
