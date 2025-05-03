@@ -151,6 +151,7 @@ func (pkt *packet) readProperties(max int) ([]property, error) {
 		}
 		properties = append(properties, prop)
         cursor += prop.size + 1
+        fmt.Printf("cursor = %d\n", cursor)
 	}
 	return properties, nil
 }
