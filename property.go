@@ -55,11 +55,10 @@ func readProperty(pkt *packet) (property, error) {
 		MQTT_PROP_MAXIMUM_PACKET_SIZE,
 		MQTT_PROP_WILL_DELAY_INTERVAL,
 		MQTT_PROP_MESSAGE_EXPIRY_INTERVAL:
-		value, err := readUint32(pkt.buffer.Next(4))
+		value, err := pkt.readUint32()
 		if err != nil {
 			return property{}, err
 		}
-
 		return property{
 			key:   pkey,
 			value: value,
@@ -69,7 +68,7 @@ func readProperty(pkt *packet) (property, error) {
 		MQTT_PROP_RECEIVE_MAXIMUM,
 		MQTT_PROP_TOPIC_ALIAS_MAXIMUM,
 		MQTT_PROP_TOPIC_ALIAS:
-		value, err := readUint16(pkt.buffer.Next(2))
+		value, err := pkt.readUint16()
 		if err != nil {
 			return property{}, err
 		}
@@ -99,13 +98,12 @@ func readProperty(pkt *packet) (property, error) {
 			size:  1,
 		}, nil
 	case MQTT_PROP_SUBSCRIPTION_ID:
-		value, err := decodeVarint(pkt.buffer.Bytes())
+		value, err := pkt.readVarint()
 		if err != nil {
 			return property{}, err
 		}
 
 		bsize := evalBytes(value)
-		_ = pkt.buffer.Next(bsize)
 
 		return property{
 			key:   pkey,
@@ -113,17 +111,15 @@ func readProperty(pkt *packet) (property, error) {
 			size:  bsize,
 		}, nil
 	case MQTT_PROP_USER_PROPERTY:
-		key, err := readUTFString(pkt.buffer.Bytes())
+		key, err := pkt.readString()
 		if err != nil {
 			return property{}, err
 		}
-		_ = pkt.buffer.Next(len(key) + 2)
 
-		value, err := readUTFString(pkt.buffer.Bytes())
+		value, err := pkt.readString()
 		if err != nil {
 			return property{}, err
 		}
-		_ = pkt.buffer.Next(len(value) + 2)
 
 		return property{
 			key:   pkey,
