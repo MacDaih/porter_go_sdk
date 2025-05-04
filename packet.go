@@ -80,7 +80,7 @@ func newPacket(buff []byte) (*packet, error) {
     iLen := int(length)
 	remainingLen := evalBytes(length)
     fheaderLen := remainingLen + 1 
-    if fheaderLen + iLen != len(buff) {
+    if iLen > len(buff) {
         return nil, ErrMalformedPacket
     }
 
