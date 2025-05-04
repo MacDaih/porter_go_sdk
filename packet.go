@@ -1,7 +1,6 @@
 package portergosdk
 
 import (
-    "fmt"
 	"bytes"
 	"errors"
 )
@@ -36,6 +35,7 @@ type packet struct {
 var (
 	ErrInvalidCommand error = errors.New("unrecognized packet command")
 	ErrInvalidLength  error = errors.New("invalid length read")
+    ErrMalformedPacket error = errors.New("malformed packet")
 )
 
 func validateType(t byte) (packetType, error) {
@@ -77,11 +77,22 @@ func newPacket(buff []byte) (*packet, error) {
 		return nil, err
 	}
 
+    iLen := int(length)
 	remainingLen := evalBytes(length)
+    fheaderLen := remainingLen + 1 
+    if fheaderLen + iLen != len(buff) {
+        return nil, ErrMalformedPacket
+    }
+
+    buff = buff[fheaderLen:]
+    if fheaderLen < iLen {
+        buff = buff[:iLen]
+    }
+
 	return &packet{
 		cmd:    pt,
 		flags:  flags,
-		buffer: bytes.NewBuffer(buff[remainingLen+1:]),
+		buffer: bytes.NewBuffer(buff),
 		length: remainingLen,
 	}, nil
 }
@@ -143,7 +154,6 @@ func (pkt *packet) readProperties(max int) ([]property, error) {
 	}
 
     cursor := 0
-    fmt.Printf("props length %d\n", propsLen)
 	for cursor < int(propsLen) {
 		prop, err := readProperty(pkt)
 		if err != nil {
@@ -151,7 +161,6 @@ func (pkt *packet) readProperties(max int) ([]property, error) {
 		}
 		properties = append(properties, prop)
         cursor += prop.size + 1
-        fmt.Printf("cursor = %d\n", cursor)
 	}
 	return properties, nil
 }
