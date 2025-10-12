@@ -20,8 +20,8 @@ func main() {
 		sdk.WithID("d14ce97e-f289-4439-b2e0-153b07784749"),
 		sdk.WithBasicCredentials("test", "test"),
 		sdk.WithCallBack(
-			func(_ context.Context, _ sdk.ContentType, payload []byte) error {
-				fmt.Println(string(payload))
+			func(_ context.Context, msg sdk.AppMessage) error {
+				fmt.Println(string(msg.Payload))
 				return nil
 			},
 		),
@@ -30,7 +30,7 @@ func main() {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(120)*time.Second)
 	defer cancel()
 
-	if err := client.Subscribe(ctx, []string{"app_telemetry"}); err != nil {
+	if err := client.Subscribe(ctx, []string{"/home/data"}); err != nil {
 		panic(err)
 	}
 
