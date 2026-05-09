@@ -33,9 +33,9 @@ type packet struct {
 }
 
 var (
-	ErrInvalidCommand error = errors.New("unrecognized packet command")
-	ErrInvalidLength  error = errors.New("invalid length read")
-    ErrMalformedPacket error = errors.New("malformed packet")
+	ErrInvalidCommand  error = errors.New("unrecognized packet command")
+	ErrInvalidLength   error = errors.New("invalid length read")
+	ErrMalformedPacket error = errors.New("malformed packet")
 )
 
 func validateType(t byte) (packetType, error) {
@@ -65,7 +65,7 @@ func validateType(t byte) (packetType, error) {
 
 func newPacket(buff []byte) (*packet, error) {
 	cmd := buff[0] & 0xf0
-    flags := buff[0] & 0x0f
+	flags := buff[0] & 0x0f
 
 	pt, err := validateType(cmd)
 	if err != nil {
@@ -77,17 +77,17 @@ func newPacket(buff []byte) (*packet, error) {
 		return nil, err
 	}
 
-    iLen := int(length)
+	iLen := int(length)
 	remainingLen := evalBytes(length)
-    fheaderLen := remainingLen + 1 
-    if iLen > len(buff) {
-        return nil, ErrMalformedPacket
-    }
+	fheaderLen := remainingLen + 1
+	if iLen > len(buff) {
+		return nil, ErrMalformedPacket
+	}
 
-    buff = buff[fheaderLen:]
-    if fheaderLen < iLen {
-        buff = buff[:iLen]
-    }
+	buff = buff[fheaderLen:]
+	if fheaderLen < iLen {
+		buff = buff[:iLen]
+	}
 
 	return &packet{
 		cmd:    pt,
@@ -153,14 +153,14 @@ func (pkt *packet) readProperties(max int) ([]property, error) {
 		return nil, ErrInvalidLength
 	}
 
-    cursor := 0
+	cursor := 0
 	for cursor < int(propsLen) {
 		prop, err := readProperty(pkt)
 		if err != nil {
 			return nil, err
 		}
 		properties = append(properties, prop)
-        cursor += prop.size + 1
+		cursor += prop.size + 1
 	}
 	return properties, nil
 }

@@ -44,6 +44,5 @@ func parseCode(in byte) CodeString {
 
 // Flag byte
 const (
-    QoSFlag = 0x18
+	QoSFlag = 0x18
 )
-

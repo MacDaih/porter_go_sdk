@@ -113,7 +113,7 @@ func readPublish(pkt *packet) (AppMessage, error) {
 
 	// qos
 	if (pkt.flags & 0x06) > 0 {
-		if _, err := pkt.readUint16();err != nil {
+		if _, err := pkt.readUint16(); err != nil {
 			return msg, err
 		}
 	}

@@ -207,12 +207,12 @@ func (pc *PorterClient) connect(ctx context.Context, es chan endState) error {
 				es <- endState{err: err}
 				return
 			}
-            
-            pkt, err := newPacket(buff)
-            if err != nil {
-                es <-endState{err: err}
-                return 
-            }
+
+			pkt, err := newPacket(buff)
+			if err != nil {
+				es <- endState{err: err}
+				return
+			}
 			pc.readMessage(ctx, pkt, es)
 		}
 	}()
@@ -333,7 +333,7 @@ func (pc *PorterClient) Subscribe(ctx context.Context, topics []string) error {
 	case end := <-es:
 		if end.err != nil {
 			if _, err := pc.conn.Write([]byte{224, 0}); err != nil {
-				panic(err)
+				return err
 			}
 			if errors.Is(end.err, net.ErrClosed) {
 				return nil
