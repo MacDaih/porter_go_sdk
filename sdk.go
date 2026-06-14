@@ -220,7 +220,7 @@ func (pc *PorterClient) connect(ctx context.Context, es chan endState) error {
 	return nil
 }
 
-func (pc *PorterClient) Publish(ctx context.Context, msg AppMessage) error {
+	func (pc *PorterClient) Publish(ctx context.Context, msg AppMessage) error {
 	es := make(chan endState, 1)
 	connCtx, cancel := withTimedContext(ctx, pc.sessionDuration)
 	defer cancel()
@@ -351,6 +351,7 @@ func (pc *PorterClient) readMessage(ctx context.Context, pkt *packet, es chan en
 		es <- endState{}
 		return
 	case publishcmd: // TODO handle pub flags
+		fmt.Printf("debug buffer \n%v\n", pkt.buffer.Bytes())
 		msg, err := readPublish(pkt)
 		if err != nil {
 			es <- endState{err: err}
