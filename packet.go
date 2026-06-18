@@ -3,6 +3,7 @@ package portergosdk
 import (
 	"bytes"
 	"errors"
+	"fmt"
 )
 
 type packetType byte
@@ -64,6 +65,7 @@ func validateType(t byte) (packetType, error) {
 }
 
 func newPacket(buff []byte) (*packet, error) {
+	fmt.Printf("dbg raw : \n%v\n", buff)
 	cmd := buff[0] & 0xf0
 	flags := buff[0] & 0x0f
 
